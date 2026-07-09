@@ -1,0 +1,186 @@
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useProductsStore } from '../stores/products'
+import { receivingService } from '../services/receivingService'
+import { requisitionService } from '../services/requisitionService'
+import { stockService } from '../services/stockService'
+
+const productsStore = useProductsStore()
+const { products, count, loading, totalStock } = storeToRefs(productsStore)
+const receipts = ref([])
+const requests = ref([])
+const movements = ref([])
+const dashboardLoading = ref(false)
+
+const lowStockCount = computed(() =>
+  products.value.filter(
+    (product) => Number(product.stock || 0) <= Number(product.low_stock_threshold || 0),
+  ).length,
+)
+
+const pendingRequestCount = computed(() =>
+  requests.value.filter((request) => request.status === 'pending').length,
+)
+
+const recentProducts = computed(() =>
+  [...products.value]
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .slice(0, 5),
+)
+
+const recentReceipts = computed(() =>
+  [...receipts.value]
+    .sort((a, b) => new Date(b.received_at || b.created_at || 0) - new Date(a.received_at || a.created_at || 0))
+    .slice(0, 4),
+)
+
+const recentMovements = computed(() =>
+  [...movements.value]
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .slice(0, 5),
+)
+
+function formatDate(value) {
+  if (!value) {
+    return '-'
+  }
+
+  return new Date(value).toLocaleDateString('tr-TR')
+}
+
+async function fetchDashboardData() {
+  dashboardLoading.value = true
+
+  try {
+    const [receiptData, requestData, movementData] = await Promise.all([
+      receivingService.list(),
+      requisitionService.list(),
+      stockService.movements(),
+    ])
+
+    receipts.value = receiptData.results || receiptData
+    requests.value = requestData.results || requestData
+    movements.value = movementData.results || movementData
+  } finally {
+    dashboardLoading.value = false
+  }
+}
+
+onMounted(() => {
+  productsStore.fetchProducts()
+  fetchDashboardData()
+})
+</script>
+
+<template>
+  <section class="space-y-6">
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <article class="inventory-card p-6">
+        <p class="text-sm font-medium text-slate-500">Toplam ürün</p>
+        <div class="mt-3 flex items-end justify-between">
+          <p class="text-3xl font-bold text-slate-950">{{ count }}</p>
+          <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">Aktif liste</span>
+        </div>
+      </article>
+
+      <article class="inventory-card p-6">
+        <p class="text-sm font-medium text-slate-500">Toplam stok</p>
+        <div class="mt-3 flex items-end justify-between">
+          <p class="text-3xl font-bold text-slate-950">{{ totalStock }}</p>
+          <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Depo</span>
+        </div>
+      </article>
+
+      <article class="inventory-card p-6">
+        <p class="text-sm font-medium text-slate-500">Kritik stok</p>
+        <div class="mt-3 flex items-end justify-between">
+          <p class="text-3xl font-bold text-slate-950">{{ lowStockCount }}</p>
+          <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+            {{ loading ? 'Kontrol ediliyor' : 'Takipte' }}
+          </span>
+        </div>
+      </article>
+
+      <article class="inventory-card p-6">
+        <p class="text-sm font-medium text-slate-500">Bekleyen talep</p>
+        <div class="mt-3 flex items-end justify-between">
+          <p class="text-3xl font-bold text-slate-950">{{ pendingRequestCount }}</p>
+          <span class="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">Teslim</span>
+        </div>
+      </article>
+
+      <article class="inventory-card p-6">
+        <p class="text-sm font-medium text-slate-500">Mal kabul</p>
+        <div class="mt-3 flex items-end justify-between">
+          <p class="text-3xl font-bold text-slate-950">{{ receipts.length }}</p>
+          <span class="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">Giriş</span>
+        </div>
+      </article>
+    </div>
+
+    <div class="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+      <article class="inventory-card overflow-hidden">
+        <div class="border-b border-slate-200 px-6 py-5">
+          <h2 class="font-bold text-slate-950">Son stok hareketleri</h2>
+          <p class="mt-1 text-sm text-slate-500">Giriş ve çıkışların son kayıtları.</p>
+        </div>
+
+        <div v-if="dashboardLoading" class="px-6 py-8 text-sm text-slate-500">
+          Hareketler yükleniyor...
+        </div>
+
+        <div v-else-if="recentMovements.length === 0" class="px-6 py-8 text-sm text-slate-500">
+          Henüz stok hareketi yok.
+        </div>
+
+        <div v-else class="divide-y divide-slate-100">
+          <div
+            v-for="movement in recentMovements"
+            :key="movement.id"
+            class="flex items-center justify-between gap-4 px-6 py-4 transition hover:bg-slate-50"
+          >
+            <div>
+              <p class="font-semibold text-slate-950">{{ movement.product_name }}</p>
+              <p class="text-sm text-slate-500">{{ movement.sku }} · {{ formatDate(movement.created_at) }}</p>
+            </div>
+            <span
+              class="rounded-full px-3 py-1 text-xs font-bold"
+              :class="movement.movement_type === 'in' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'"
+            >
+              {{ movement.movement_type === 'in' ? '+' : '-' }}{{ movement.quantity }}
+            </span>
+          </div>
+        </div>
+      </article>
+
+      <article class="inventory-card overflow-hidden">
+        <div class="border-b border-slate-200 px-6 py-5">
+          <h2 class="font-bold text-slate-950">Son mal kabuller</h2>
+          <p class="mt-1 text-sm text-slate-500">Depoya en son giren kayıtlar.</p>
+        </div>
+
+        <div v-if="dashboardLoading" class="px-6 py-8 text-sm text-slate-500">
+          Mal kabuller yükleniyor...
+        </div>
+
+        <div v-else-if="recentReceipts.length === 0" class="px-6 py-8 text-sm text-slate-500">
+          Henüz mal kabul kaydı yok.
+        </div>
+
+        <div v-else class="divide-y divide-slate-100">
+          <div
+            v-for="receipt in recentReceipts"
+            :key="receipt.id"
+            class="px-6 py-4 transition hover:bg-slate-50"
+          >
+            <p class="font-semibold text-slate-950">{{ receipt.supplier_name }}</p>
+            <p class="mt-1 text-sm text-slate-500">
+              {{ receipt.document_no || 'Belge no yok' }} · {{ formatDate(receipt.received_at) }}
+            </p>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+</template>
