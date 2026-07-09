@@ -22,6 +22,24 @@ const deliveredQuantity = computed(() =>
   ),
 );
 
+const pendingQuantity = computed(() =>
+  Math.max(totalQuantity.value - deliveredQuantity.value, 0),
+);
+
+const completionPercent = computed(() => {
+  if (!totalQuantity.value) {
+    return 0;
+  }
+
+  return Math.round((deliveredQuantity.value / totalQuantity.value) * 100);
+});
+
+const lowStockItemCount = computed(() =>
+  items.value.filter(
+    (item) => Number(item.current_stock || 0) < Number(item.quantity || 0),
+  ).length,
+);
+
 const requestDate = computed(() => {
   if (!request.value?.created_at) {
     return "-";
@@ -56,10 +74,10 @@ function getStatusClass(status) {
 
 function getStockClass(item) {
   if (Number(item.current_stock || 0) < Number(item.quantity || 0)) {
-    return "text-amber-700";
+    return "border-amber-200 bg-amber-50 text-amber-700";
   }
 
-  return "text-emerald-700";
+  return "border-emerald-200 bg-emerald-50 text-emerald-700";
 }
 
 async function fetchRequest() {
@@ -81,9 +99,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="space-y-4">
+  <section class="space-y-5">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
+      <div class="min-w-0">
         <button
           type="button"
           class="mb-2 inline-flex items-center gap-1 text-sm font-bold text-slate-500 transition hover:text-blue-700"
@@ -94,7 +112,7 @@ onMounted(() => {
         </button>
         <h2 class="text-xl font-bold text-slate-950">Talep detayı</h2>
         <p class="text-sm text-slate-500">
-          Bu talepte hangi ürünlerin istendiğini, miktarları ve teslim durumunu incele.
+          İstenen ürünleri, teslim durumunu ve stok uygunluğunu tek ekranda takip et.
         </p>
       </div>
     </div>
@@ -106,103 +124,188 @@ onMounted(() => {
     <v-progress-linear v-if="loading" color="primary" indeterminate />
 
     <template v-else-if="request">
-      <div class="grid gap-4 md:grid-cols-4">
-        <article class="inventory-card p-5">
-          <p class="text-sm font-medium text-slate-500">Birim</p>
-          <p class="mt-2 text-lg font-bold text-slate-950">
-            {{ request.department }}
-          </p>
-          <p class="mt-1 text-sm text-slate-500">
-            {{ request.requester_name }}
-          </p>
-        </article>
+      <section class="inventory-card overflow-hidden">
+        <div class="border-b border-slate-200 bg-white px-6 py-5">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div class="min-w-0">
+              <div class="mb-3 flex flex-wrap items-center gap-2">
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                  Talep #{{ request.id }}
+                </span>
+                <span
+                  class="inline-flex rounded-full border px-3 py-1 text-xs font-bold"
+                  :class="getStatusClass(request.status)"
+                >
+                  {{ request.status_label }}
+                </span>
+              </div>
+              <h3 class="text-2xl font-bold text-slate-950">
+                {{ request.department }}
+              </h3>
+              <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+                {{ request.requester_name }} tarafından açılan bu talepte
+                {{ items.length }} kalem ürün ve toplam {{ totalQuantity }} adet istek bulunuyor.
+              </p>
+            </div>
 
-        <article class="inventory-card p-5">
-          <p class="text-sm font-medium text-slate-500">Durum</p>
-          <span
-            class="mt-3 inline-flex rounded-full border px-3 py-1.5 text-xs font-bold"
-            :class="getStatusClass(request.status)"
-          >
-            {{ request.status_label }}
-          </span>
-          <p class="mt-2 text-sm text-slate-500">
-            {{ fulfilledDate }}
-          </p>
-        </article>
-
-        <article class="inventory-card p-5">
-          <p class="text-sm font-medium text-slate-500">Toplam adet</p>
-          <p class="mt-2 text-3xl font-bold text-slate-950">
-            {{ totalQuantity }}
-          </p>
-          <p class="mt-1 text-sm text-slate-500">
-            {{ items.length }} kalem ürün
-          </p>
-        </article>
-
-        <article class="inventory-card p-5">
-          <p class="text-sm font-medium text-slate-500">Teslim edilen</p>
-          <p class="mt-2 text-3xl font-bold text-slate-950">
-            {{ deliveredQuantity }}
-          </p>
-          <p class="mt-1 text-sm text-slate-500">
-            {{ requestDate }}
-          </p>
-        </article>
-      </div>
-
-      <v-card class="inventory-card overflow-hidden" elevation="0">
-        <div class="inventory-section-header border-b border-slate-200">
-          <h3 class="font-bold text-slate-950">İstenen ürünler</h3>
-          <p class="text-sm text-slate-500">
-            Her satır bu talep içinde istenen ürünü ve stok durumunu gösterir.
-          </p>
+            <div class="grid gap-3 text-sm sm:grid-cols-2 lg:min-w-[360px]">
+              <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                <p class="font-semibold text-slate-500">Açılış tarihi</p>
+                <p class="mt-1 font-bold text-slate-900">{{ requestDate }}</p>
+              </div>
+              <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                <p class="font-semibold text-slate-500">Teslim tarihi</p>
+                <p class="mt-1 font-bold text-slate-900">{{ fulfilledDate }}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-50 text-left text-xs font-bold uppercase text-slate-500">
-              <tr>
-                <th class="px-6 py-4">Ürün</th>
-                <th class="px-6 py-4">SKU</th>
-                <th class="px-6 py-4 text-right">İstenen</th>
-                <th class="px-6 py-4 text-right">Teslim edilen</th>
-                <th class="px-6 py-4 text-right">Mevcut stok</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr
-                v-for="item in items"
-                :key="item.id"
-                class="transition hover:bg-slate-50"
-              >
-                <td class="px-6 py-4 font-semibold text-slate-900">
-                  {{ item.product_name }}
-                </td>
-                <td class="px-6 py-4 text-slate-600">
-                  {{ item.sku }}
-                </td>
-                <td class="px-6 py-4 text-right font-bold text-slate-900">
-                  {{ item.quantity }}
-                </td>
-                <td class="px-6 py-4 text-right text-slate-600">
-                  {{ item.delivered_quantity }}
-                </td>
-                <td class="px-6 py-4 text-right font-bold" :class="getStockClass(item)">
-                  {{ item.current_stock }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </v-card>
+        <div class="grid gap-0 divide-y divide-slate-200 md:grid-cols-4 md:divide-x md:divide-y-0">
+          <div class="px-6 py-5">
+            <p class="text-sm font-medium text-slate-500">Toplam adet</p>
+            <p class="mt-2 text-3xl font-bold text-slate-950">
+              {{ totalQuantity }}
+            </p>
+          </div>
 
-      <v-card class="inventory-card p-5" elevation="0">
-        <p class="text-sm font-medium text-slate-500">Not</p>
-        <p class="mt-2 text-sm leading-6 text-slate-700">
-          {{ request.note || "Bu talep için not girilmemiş." }}
-        </p>
-      </v-card>
+          <div class="px-6 py-5">
+            <p class="text-sm font-medium text-slate-500">Teslim edilen</p>
+            <p class="mt-2 text-3xl font-bold text-emerald-700">
+              {{ deliveredQuantity }}
+            </p>
+          </div>
+
+          <div class="px-6 py-5">
+            <p class="text-sm font-medium text-slate-500">Bekleyen adet</p>
+            <p class="mt-2 text-3xl font-bold text-slate-950">
+              {{ pendingQuantity }}
+            </p>
+          </div>
+
+          <div class="px-6 py-5">
+            <p class="text-sm font-medium text-slate-500">Stok uyarısı</p>
+            <p
+              class="mt-2 text-3xl font-bold"
+              :class="lowStockItemCount ? 'text-amber-700' : 'text-emerald-700'"
+            >
+              {{ lowStockItemCount }}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <v-card class="inventory-card overflow-hidden" elevation="0">
+          <div class="inventory-section-header border-b border-slate-200">
+            <div>
+              <h3 class="font-bold text-slate-950">İstenen ürünler</h3>
+              <p class="text-sm text-slate-500">
+                Her ürün için istenen miktar, teslim edilen adet ve mevcut stok durumu.
+              </p>
+            </div>
+          </div>
+
+          <div class="divide-y divide-slate-100">
+            <article
+              v-for="item in items"
+              :key="item.id"
+              class="px-6 py-5 transition hover:bg-slate-50"
+            >
+              <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h4 class="font-bold text-slate-950">
+                      {{ item.product_name }}
+                    </h4>
+                    <span class="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                      {{ item.sku }}
+                    </span>
+                  </div>
+                  <p class="mt-2 text-sm text-slate-500">
+                    {{ item.quantity }} adet istendi,
+                    {{ item.delivered_quantity }} adet teslim edildi.
+                  </p>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 sm:min-w-[360px]">
+                  <div class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-right">
+                    <p class="text-xs font-semibold text-slate-500">İstenen</p>
+                    <p class="mt-1 text-lg font-bold text-slate-950">{{ item.quantity }}</p>
+                  </div>
+                  <div class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-right">
+                    <p class="text-xs font-semibold text-slate-500">Teslim</p>
+                    <p class="mt-1 text-lg font-bold text-slate-950">{{ item.delivered_quantity }}</p>
+                  </div>
+                  <div
+                    class="rounded-lg border px-3 py-2 text-right"
+                    :class="getStockClass(item)"
+                  >
+                    <p class="text-xs font-semibold">Stok</p>
+                    <p class="mt-1 text-lg font-bold">{{ item.current_stock }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <div class="mb-2 flex items-center justify-between gap-3 text-xs font-bold">
+                  <span class="text-slate-500">Teslim ilerlemesi</span>
+                  <span class="text-slate-700">
+                    {{ item.delivered_quantity }} / {{ item.quantity }}
+                  </span>
+                </div>
+                <v-progress-linear
+                  color="primary"
+                  height="8"
+                  rounded
+                  :model-value="Number(item.quantity || 0) ? (Number(item.delivered_quantity || 0) / Number(item.quantity || 0)) * 100 : 0"
+                />
+              </div>
+            </article>
+          </div>
+        </v-card>
+
+        <aside class="space-y-4">
+          <article class="inventory-card p-5">
+            <p class="text-sm font-medium text-slate-500">Genel ilerleme</p>
+            <div class="mt-4 flex items-end justify-between gap-3">
+              <p class="text-4xl font-bold text-slate-950">
+                %{{ completionPercent }}
+              </p>
+              <p class="pb-1 text-sm font-semibold text-slate-500">
+                {{ deliveredQuantity }} / {{ totalQuantity }}
+              </p>
+            </div>
+            <v-progress-linear
+              class="mt-4"
+              color="primary"
+              height="10"
+              rounded
+              :model-value="completionPercent"
+            />
+          </article>
+
+          <article class="inventory-card p-5">
+            <p class="text-sm font-medium text-slate-500">Stok değerlendirmesi</p>
+            <p
+              class="mt-2 text-lg font-bold"
+              :class="lowStockItemCount ? 'text-amber-700' : 'text-emerald-700'"
+            >
+              {{ lowStockItemCount ? `${lowStockItemCount} kalemde stok yetersiz` : "Tüm kalemlerde stok uygun" }}
+            </p>
+            <p class="mt-2 text-sm leading-6 text-slate-500">
+              Stok yetersizse talep teslim aşamasında tedarik bekliyor durumuna alınır.
+            </p>
+          </article>
+
+          <article class="inventory-card p-5">
+            <p class="text-sm font-medium text-slate-500">Not</p>
+            <p class="mt-2 text-sm leading-6 text-slate-700">
+              {{ request.note || "Bu talep için not girilmemiş." }}
+            </p>
+          </article>
+        </aside>
+      </section>
     </template>
   </section>
 </template>
