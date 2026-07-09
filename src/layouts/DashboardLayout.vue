@@ -8,14 +8,18 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const menuItems = [
-  { title: 'Panel', icon: 'P', to: '/' },
-  { title: 'Ürünler', icon: 'Ü', to: '/products' },
-  { title: 'Tedarikçiler', icon: 'T', to: '/suppliers' },
-  { title: 'Mal kabul', icon: 'M', to: '/receiving' },
+  { title: 'Panel', icon: 'P', to: '/', requiresInventoryManager: true },
+  { title: 'Ürünler', icon: 'Ü', to: '/products', requiresInventoryManager: true },
+  { title: 'Tedarikçiler', icon: 'T', to: '/suppliers', requiresInventoryManager: true },
+  { title: 'Mal kabul', icon: 'M', to: '/receiving', requiresInventoryManager: true },
   { title: 'Talepler', icon: 'İ', to: '/requisitions' },
-  { title: 'Hareketler', icon: 'H', to: '/stock-movements' },
-  { title: 'Düşük stok', icon: 'S', to: '/low-stock' },
+  { title: 'Hareketler', icon: 'H', to: '/stock-movements', requiresInventoryManager: true },
+  { title: 'Düşük stok', icon: 'S', to: '/low-stock', requiresInventoryManager: true },
 ]
+
+const visibleMenuItems = computed(() =>
+  menuItems.filter((item) => !item.requiresInventoryManager || authStore.canManageInventory),
+)
 
 const pageTitle = computed(() => {
   if (route.meta.title) {
@@ -51,7 +55,7 @@ async function handleLogout() {
 
       <nav class="space-y-1 p-3">
         <RouterLink
-          v-for="item in menuItems"
+          v-for="item in visibleMenuItems"
           :key="item.to"
           :to="item.to"
           class="flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950"
@@ -82,7 +86,13 @@ async function handleLogout() {
           </div>
 
           <div class="flex items-center gap-3">
-            <span class="hidden text-sm text-slate-600 sm:inline">{{ authStore.userFullName }}</span>
+            <div class="hidden text-right sm:block">
+              <p class="text-sm font-semibold text-slate-700">{{ authStore.userFullName }}</p>
+              <p class="text-xs text-slate-500">
+                {{ authStore.roleLabel }}
+                <span v-if="authStore.userDepartment"> · {{ authStore.userDepartment }}</span>
+              </p>
+            </div>
             <button
               type="button"
               class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
@@ -95,7 +105,7 @@ async function handleLogout() {
 
         <nav class="flex gap-2 overflow-x-auto border-t border-slate-100 px-4 py-2 lg:hidden">
           <RouterLink
-            v-for="item in menuItems"
+            v-for="item in visibleMenuItems"
             :key="item.to"
             :to="item.to"
             class="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-slate-600"

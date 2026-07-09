@@ -27,27 +27,31 @@ const routes = [
         path: '',
         name: 'dashboard',
         component: DashboardView,
+        meta: { requiresInventoryManager: true },
       },
       {
         path: 'products',
         name: 'products',
         component: ProductsView,
+        meta: { requiresInventoryManager: true },
       },
       {
         path: 'suppliers',
         name: 'suppliers',
         component: SuppliersView,
+        meta: { requiresInventoryManager: true },
       },
       {
         path: 'receiving',
         name: 'receiving',
         component: ReceivingView,
+        meta: { requiresInventoryManager: true },
       },
       {
         path: 'receiving/:id',
         name: 'receiving-detail',
         component: ReceivingDetailView,
-        meta: { title: 'Mal kabul detayı' },
+        meta: { title: 'Mal kabul detayı', requiresInventoryManager: true },
       },
       {
         path: 'requisitions',
@@ -58,11 +62,13 @@ const routes = [
         path: 'stock-movements',
         name: 'stock-movements',
         component: StockMovementsView,
+        meta: { requiresInventoryManager: true },
       },
       {
         path: 'low-stock',
         name: 'low-stock',
         component: LowStockView,
+        meta: { requiresInventoryManager: true },
       },
     ],
   },
@@ -75,13 +81,18 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const authStore = useAuthStore()
+  const defaultRoute = authStore.canManageInventory ? 'dashboard' : 'requisitions'
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return { name: 'login' }
   }
 
   if (to.meta.guestOnly && authStore.isAuthenticated) {
-    return { name: 'dashboard' }
+    return { name: defaultRoute }
+  }
+
+  if (to.meta.requiresInventoryManager && !authStore.canManageInventory) {
+    return { name: 'requisitions' }
   }
 
   return true

@@ -2,7 +2,9 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { productService } from "../services/productService";
 import { requisitionService } from "../services/requisitionService";
+import { useAuthStore } from "../stores/auth";
 
+const authStore = useAuthStore();
 const requests = ref([]);
 const products = ref([]);
 const loading = ref(false);
@@ -58,6 +60,10 @@ const rules = {
 
 const selectableProducts = computed(() =>
   products.value.filter((product) => product.is_active !== false),
+);
+
+const isDepartmentUser = computed(
+  () => authStore.userRole === "department" && !authStore.canManageInventory,
 );
 
 const tableRequests = computed(() =>
@@ -121,7 +127,9 @@ function getStatusClass(status) {
 }
 
 function resetRequestForm() {
-  requestForm.department = "";
+  requestForm.department = isDepartmentUser.value
+    ? authStore.userDepartment
+    : "";
   requestForm.requester_name = "";
   requestForm.note = "";
   requestForm.request_items = [
@@ -434,6 +442,7 @@ onMounted(() => {
                   persistent-hint
                   variant="outlined"
                   density="comfortable"
+                  :disabled="isDepartmentUser && Boolean(authStore.userDepartment)"
                   :rules="[rules.required]"
                 />
               </div>

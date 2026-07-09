@@ -16,6 +16,30 @@ export const useAuthStore = defineStore("auth", {
     isAuthenticated: (state) => Boolean(state.token),
     userFullName: (state) =>
       state.user?.full_name || state.user?.username || "Kullanici",
+    userRole: (state) => {
+      if (state.user?.role) {
+        return state.user.role;
+      }
+
+      if (state.user?.is_superuser) {
+        return "admin";
+      }
+
+      if (state.user?.is_staff) {
+        return "operations";
+      }
+
+      return "department";
+    },
+    userDepartment: (state) => state.user?.department || "",
+    roleLabel: (state) => state.user?.role_label || "Birim Kullanıcısı",
+    canManageInventory: (state) => {
+      if (typeof state.user?.can_manage_inventory === "boolean") {
+        return state.user.can_manage_inventory;
+      }
+
+      return Boolean(state.user?.is_superuser || state.user?.is_staff);
+    },
   },
 
   actions: {
