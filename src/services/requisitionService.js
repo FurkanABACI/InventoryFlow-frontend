@@ -11,6 +11,11 @@ export const requisitionService = {
     return response.data
   },
 
+  async detail(requestId) {
+    const response = await api.get(`/stock-requests/${requestId}/`)
+    return response.data
+  },
+
   async fulfill(requestId) {
     const response = await api.post(`/stock-requests/${requestId}/fulfill/`)
     return response.data

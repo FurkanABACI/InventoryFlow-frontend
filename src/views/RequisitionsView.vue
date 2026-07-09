@@ -1,10 +1,12 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import { productService } from "../services/productService";
 import { requisitionService } from "../services/requisitionService";
 import { useAuthStore } from "../stores/auth";
 
 const authStore = useAuthStore();
+const router = useRouter();
 const requests = ref([]);
 const products = ref([]);
 const loading = ref(false);
@@ -35,6 +37,7 @@ const requestForm = reactive({
 const requestHeaders = [
   { title: "Birim", key: "department" },
   { title: "Talep eden", key: "requester_name" },
+  { title: "Ürünler", key: "itemsPreview" },
   { title: "Kalem", key: "itemsCount" },
   { title: "Toplam adet", key: "total_quantity" },
   { title: "Durum", key: "status" },
@@ -71,6 +74,10 @@ const tableRequests = computed(() =>
     .map((request) => ({
       ...request,
       itemsCount: request.items?.length || 0,
+      itemsPreview: (request.items || [])
+        .map((item) => item.product_name)
+        .slice(0, 2)
+        .join(", "),
       createdDate: request.created_at
         ? new Date(request.created_at).toLocaleDateString("tr-TR")
         : "-",
@@ -124,6 +131,11 @@ function getStatusClass(status) {
   }
 
   return "border-blue-200 bg-blue-50 text-blue-700";
+}
+
+function openRequestDetail(item) {
+  const request = getTableItem(item);
+  router.push({ name: "requisition-detail", params: { id: request.id } });
 }
 
 function resetRequestForm() {
@@ -353,8 +365,23 @@ onMounted(() => {
           </span>
         </template>
 
+        <template #item.itemsPreview="{ item }">
+          <span class="text-sm font-medium text-slate-700">
+            {{ getTableItem(item).itemsPreview || "Ürün bilgisi yok" }}
+          </span>
+        </template>
+
         <template #item.actions="{ item }">
           <div class="flex justify-end gap-1">
+            <v-btn
+              aria-label="Talep detayını görüntüle"
+              class="inventory-row-action"
+              icon="mdi-eye-outline"
+              size="small"
+              title="Talep detayını görüntüle"
+              variant="text"
+              @click="openRequestDetail(item)"
+            />
             <v-btn
               v-if="getTableItem(item).status === 'pending'"
               aria-label="Talebi teslim et"

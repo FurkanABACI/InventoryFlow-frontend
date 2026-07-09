@@ -8,6 +8,7 @@ import LowStockView from '../views/LowStockView.vue'
 import SuppliersView from '../views/SuppliersView.vue'
 import ReceivingView from '../views/ReceivingView.vue'
 import ReceivingDetailView from '../views/ReceivingDetailView.vue'
+import RequisitionDetailView from '../views/RequisitionDetailView.vue'
 import RequisitionsView from '../views/RequisitionsView.vue'
 import StockMovementsView from '../views/StockMovementsView.vue'
 import UsersView from '../views/UsersView.vue'
@@ -58,6 +59,12 @@ const routes = [
         path: 'requisitions',
         name: 'requisitions',
         component: RequisitionsView,
+      },
+      {
+        path: 'requisitions/:id',
+        name: 'requisition-detail',
+        component: RequisitionDetailView,
+        meta: { title: 'Talep detayı' },
       },
       {
         path: 'stock-movements',
