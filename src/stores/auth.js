@@ -40,6 +40,13 @@ export const useAuthStore = defineStore("auth", {
 
       return Boolean(state.user?.is_superuser || state.user?.is_staff);
     },
+    isAdmin: (state) => {
+      if (state.user?.role) {
+        return state.user.role === "admin";
+      }
+
+      return Boolean(state.user?.is_superuser);
+    },
   },
 
   actions: {

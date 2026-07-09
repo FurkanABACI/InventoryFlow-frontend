@@ -15,10 +15,21 @@ const menuItems = [
   { title: 'Talepler', icon: 'İ', to: '/requisitions' },
   { title: 'Hareketler', icon: 'H', to: '/stock-movements', requiresInventoryManager: true },
   { title: 'Düşük stok', icon: 'S', to: '/low-stock', requiresInventoryManager: true },
+  { title: 'Kullanıcılar', icon: 'K', to: '/users', requiresAdmin: true },
 ]
 
 const visibleMenuItems = computed(() =>
-  menuItems.filter((item) => !item.requiresInventoryManager || authStore.canManageInventory),
+  menuItems.filter((item) => {
+    if (item.requiresAdmin) {
+      return authStore.isAdmin
+    }
+
+    if (item.requiresInventoryManager) {
+      return authStore.canManageInventory
+    }
+
+    return true
+  }),
 )
 
 const pageTitle = computed(() => {

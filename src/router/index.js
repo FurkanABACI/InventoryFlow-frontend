@@ -10,6 +10,7 @@ import ReceivingView from '../views/ReceivingView.vue'
 import ReceivingDetailView from '../views/ReceivingDetailView.vue'
 import RequisitionsView from '../views/RequisitionsView.vue'
 import StockMovementsView from '../views/StockMovementsView.vue'
+import UsersView from '../views/UsersView.vue'
 
 const routes = [
   {
@@ -70,6 +71,12 @@ const routes = [
         component: LowStockView,
         meta: { requiresInventoryManager: true },
       },
+      {
+        path: 'users',
+        name: 'users',
+        component: UsersView,
+        meta: { requiresAdmin: true, title: 'Kullanıcılar' },
+      },
     ],
   },
 ]
@@ -93,6 +100,10 @@ router.beforeEach((to) => {
 
   if (to.meta.requiresInventoryManager && !authStore.canManageInventory) {
     return { name: 'requisitions' }
+  }
+
+  if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    return { name: defaultRoute }
   }
 
   return true
