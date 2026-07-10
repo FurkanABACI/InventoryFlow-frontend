@@ -642,27 +642,40 @@ onMounted(() => {
                   </v-btn>
                 </div>
 
-                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_140px]">
+                <div class="space-y-4">
                   <div v-if="item.item_type === 'existing'" class="space-y-3">
                     <div
                       v-if="getSelectedProduct(item)"
-                      class="flex flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                      class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3"
                     >
-                      <div class="min-w-0">
-                        <p class="truncate text-sm font-bold text-blue-950">
-                          {{ getSelectedProduct(item).name }}
-                        </p>
-                        <p class="mt-1 text-xs font-semibold text-blue-700">
-                          {{ getSelectedProduct(item).sku }} · stok: {{ getSelectedProduct(item).stock }}
-                        </p>
+                      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0">
+                          <p class="text-base font-bold leading-6 text-blue-950">
+                            {{ getSelectedProduct(item).name }}
+                          </p>
+                          <div class="mt-2 flex flex-wrap gap-2">
+                            <span class="rounded-md bg-white px-2.5 py-1 text-xs font-bold text-blue-700">
+                              SKU: {{ getSelectedProduct(item).sku }}
+                            </span>
+                            <span class="rounded-md bg-white px-2.5 py-1 text-xs font-bold text-blue-700">
+                              Stok: {{ getSelectedProduct(item).stock }}
+                            </span>
+                            <span class="rounded-md bg-white px-2.5 py-1 text-xs font-bold text-blue-700">
+                              {{ getSelectedProduct(item).category_name || "Kategori yok" }}
+                            </span>
+                            <span class="rounded-md bg-white px-2.5 py-1 text-xs font-bold text-blue-700">
+                              {{ getSelectedProduct(item).supplier_name || "Tedarikçi yok" }}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          class="inline-flex shrink-0 items-center justify-center rounded-md border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100 hover:text-blue-900"
+                          @click="clearSelectedProduct(item)"
+                        >
+                          Değiştir
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        class="inline-flex items-center justify-center rounded-md border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100 hover:text-blue-900"
-                        @click="clearSelectedProduct(item)"
-                      >
-                        Değiştir
-                      </button>
                     </div>
 
                     <div v-else>
@@ -680,24 +693,34 @@ onMounted(() => {
                         @click:clear="clearSelectedProduct(item)"
                       />
 
-                      <div class="mt-3 max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50">
+                      <div class="mt-3 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50">
                         <button
                           v-for="product in getFilteredProducts(item)"
                           :key="product.id"
                           type="button"
-                          class="flex w-full items-center justify-between gap-3 border-b border-slate-200 px-3 py-2.5 text-left last:border-b-0 hover:bg-white"
+                          class="w-full border-b border-slate-200 px-3 py-3 text-left last:border-b-0 hover:bg-white"
                           @click="selectProduct(item, product)"
                         >
-                          <span class="min-w-0">
-                            <span class="block truncate text-sm font-bold text-slate-900">
-                              {{ product.name }}
+                          <span class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <span class="min-w-0">
+                              <span class="block text-sm font-bold leading-5 text-slate-900">
+                                {{ product.name }}
+                              </span>
+                              <span class="mt-1 flex flex-wrap gap-1.5">
+                                <span class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">
+                                  SKU: {{ product.sku }}
+                                </span>
+                                <span class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">
+                                  {{ product.category_name || "Kategori yok" }}
+                                </span>
+                                <span class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">
+                                  {{ product.supplier_name || "Tedarikçi yok" }}
+                                </span>
+                              </span>
                             </span>
-                            <span class="block truncate text-xs font-semibold text-slate-500">
-                              {{ product.sku }} · {{ product.category_name || "Kategori yok" }}
+                            <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                              stok {{ product.stock }}
                             </span>
-                          </span>
-                          <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
-                            stok {{ product.stock }}
                           </span>
                         </button>
 
@@ -746,7 +769,7 @@ onMounted(() => {
                     </div>
                   </div>
 
-                  <div>
+                  <div class="w-full sm:w-40">
                     <span class="inventory-field-label">Miktar</span>
                     <v-text-field
                       v-model.number="item.quantity"
