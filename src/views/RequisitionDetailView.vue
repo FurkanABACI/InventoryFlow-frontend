@@ -36,8 +36,14 @@ const completionPercent = computed(() => {
 
 const lowStockItemCount = computed(() =>
   items.value.filter(
-    (item) => Number(item.current_stock || 0) < Number(item.quantity || 0),
+    (item) =>
+      item.has_product_card &&
+      Number(item.current_stock || 0) < Number(item.quantity || 0),
   ).length,
+);
+
+const uncatalogedItemCount = computed(() =>
+  items.value.filter((item) => !item.has_product_card).length,
 );
 
 const requestDate = computed(() => {
@@ -73,6 +79,10 @@ function getStatusClass(status) {
 }
 
 function getStockClass(item) {
+  if (!item.has_product_card) {
+    return "border-slate-200 bg-slate-100 text-slate-600";
+  }
+
   if (Number(item.current_stock || 0) < Number(item.quantity || 0)) {
     return "border-amber-200 bg-amber-50 text-amber-700";
   }
@@ -189,9 +199,9 @@ onMounted(() => {
             <p class="text-xs font-semibold text-slate-500">Stok uyarısı</p>
             <p
               class="mt-1 text-xl font-bold"
-              :class="lowStockItemCount ? 'text-amber-700' : 'text-emerald-700'"
+              :class="lowStockItemCount || uncatalogedItemCount ? 'text-amber-700' : 'text-emerald-700'"
             >
-              {{ lowStockItemCount }}
+              {{ lowStockItemCount + uncatalogedItemCount }}
             </p>
           </div>
         </div>
@@ -227,6 +237,9 @@ onMounted(() => {
                   <p class="mt-2 text-sm text-slate-500">
                     {{ item.quantity }} adet istendi,
                     {{ item.delivered_quantity }} adet teslim edildi.
+                    <span v-if="item.requested_product_note">
+                      Not: {{ item.requested_product_note }}
+                    </span>
                   </p>
                 </div>
 
@@ -244,7 +257,9 @@ onMounted(() => {
                     :class="getStockClass(item)"
                   >
                     <p class="text-xs font-semibold">Stok</p>
-                    <p class="mt-1 text-base font-bold">{{ item.current_stock }}</p>
+                    <p class="mt-1 text-base font-bold">
+                      {{ item.has_product_card ? item.current_stock : "Kart bekliyor" }}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -291,9 +306,15 @@ onMounted(() => {
             <p class="text-xs font-semibold text-slate-500">Stok değerlendirmesi</p>
             <p
               class="mt-2 text-base font-bold"
-              :class="lowStockItemCount ? 'text-amber-700' : 'text-emerald-700'"
+              :class="lowStockItemCount || uncatalogedItemCount ? 'text-amber-700' : 'text-emerald-700'"
             >
-              {{ lowStockItemCount ? `${lowStockItemCount} kalemde stok yetersiz` : "Tüm kalemlerde stok uygun" }}
+              {{
+                uncatalogedItemCount
+                  ? `${uncatalogedItemCount} kalem için ürün kartı bekleniyor`
+                  : lowStockItemCount
+                    ? `${lowStockItemCount} kalemde stok yetersiz`
+                    : "Tüm kalemlerde stok uygun"
+              }}
             </p>
             <p class="mt-2 text-sm leading-6 text-slate-500">
               Stok yetersizse talep teslim aşamasında tedarik bekliyor durumuna alınır.

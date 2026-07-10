@@ -28,7 +28,10 @@ const requestForm = reactive({
   note: "",
   request_items: [
     {
+      item_type: "existing",
       product: "",
+      requested_product_name: "",
+      requested_product_note: "",
       quantity: 1,
     },
   ],
@@ -61,6 +64,11 @@ const rules = {
     Number.isInteger(Number(value)) || "Miktar tam sayı olmalıdır.",
 };
 
+const itemTypeOptions = [
+  { title: "Mevcut ürün", value: "existing" },
+  { title: "Ürün listede yok", value: "custom" },
+];
+
 const selectableProducts = computed(() =>
   products.value.filter((product) => product.is_active !== false),
 );
@@ -75,7 +83,7 @@ const tableRequests = computed(() =>
       ...request,
       itemsCount: request.items?.length || 0,
       itemsPreview: (request.items || [])
-        .map((item) => item.product_name)
+        .map((item) => item.product_name || item.requested_product_name)
         .slice(0, 2)
         .join(", "),
       createdDate: request.created_at
@@ -146,7 +154,10 @@ function resetRequestForm() {
   requestForm.note = "";
   requestForm.request_items = [
     {
+      item_type: "existing",
       product: "",
+      requested_product_name: "",
+      requested_product_note: "",
       quantity: 1,
     },
   ];
@@ -167,7 +178,10 @@ function closeRequestDialog() {
 
 function addRequestItem() {
   requestForm.request_items.push({
+    item_type: "existing",
     product: "",
+    requested_product_name: "",
+    requested_product_note: "",
     quantity: 1,
   });
 }
@@ -205,10 +219,26 @@ function getErrorMessage(error) {
 function hasValidRequestItems() {
   return requestForm.request_items.every(
     (item) =>
-      item.product &&
+      (item.item_type === "existing"
+        ? item.product
+        : String(item.requested_product_name ?? "").trim()) &&
       Number(item.quantity) > 0 &&
       Number.isInteger(Number(item.quantity)),
   );
+}
+
+function getProductOptionTitle(product) {
+  return `${product.name} - ${product.sku} (stok: ${product.stock})`;
+}
+
+function changeRequestItemType(item) {
+  if (item.item_type === "existing") {
+    item.requested_product_name = "";
+    item.requested_product_note = "";
+    return;
+  }
+
+  item.product = "";
 }
 
 async function fetchPageData() {
@@ -237,7 +267,7 @@ async function submitRequest() {
 
   if (!result?.valid || !hasValidRequestItems()) {
     formError.value =
-      "Birim, talep eden kişi, ürün ve miktar alanlarını kontrol et.";
+      "Birim, talep eden kişi, ürün bilgisi ve miktar alanlarını kontrol et.";
     return;
   }
 
@@ -248,10 +278,21 @@ async function submitRequest() {
       department: requestForm.department.trim(),
       requester_name: requestForm.requester_name.trim(),
       note: requestForm.note.trim(),
-      request_items: requestForm.request_items.map((item) => ({
-        product: Number(item.product),
-        quantity: Number(item.quantity),
-      })),
+      request_items: requestForm.request_items.map((item) => {
+        if (item.item_type === "existing") {
+          return {
+            product: Number(item.product),
+            quantity: Number(item.quantity),
+          };
+        }
+
+        return {
+          product: null,
+          requested_product_name: item.requested_product_name.trim(),
+          requested_product_note: item.requested_product_note.trim(),
+          quantity: Number(item.quantity),
+        };
+      }),
     });
     await fetchPageData();
     successMessage.value = "Talep oluşturuldu.";
@@ -521,58 +562,106 @@ onMounted(() => {
               <div
                 v-for="(item, index) in requestForm.request_items"
                 :key="index"
-                class="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[minmax(0,1fr)_140px_auto]"
+                class="rounded-lg border border-slate-200 bg-slate-50 p-4"
               >
-                <label class="inventory-native-field">
-                  <span class="inventory-native-label">Ürün</span>
-                  <select
-                    v-model="item.product"
-                    class="inventory-native-select"
-                  >
-                    <option value="" disabled>Ürün seç</option>
-                    <option
-                      v-for="product in selectableProducts"
-                      :key="product.id"
-                      :value="product.id"
+                <div class="grid gap-3 lg:grid-cols-[170px_minmax(0,1fr)_140px_auto]">
+                  <label class="inventory-native-field">
+                    <span class="inventory-native-label">Kalem tipi</span>
+                    <select
+                      v-model="item.item_type"
+                      class="inventory-native-select"
+                      @change="changeRequestItemType(item)"
                     >
-                      {{ product.name }} - {{ product.sku }} (stok:
-                      {{ product.stock }})
-                    </option>
-                  </select>
-                  <p
-                    v-if="triedSubmit && !item.product"
-                    class="inventory-error-text"
-                  >
-                    Ürün seçilmelidir.
-                  </p>
-                </label>
+                      <option
+                        v-for="option in itemTypeOptions"
+                        :key="option.value"
+                        :value="option.value"
+                      >
+                        {{ option.title }}
+                      </option>
+                    </select>
+                  </label>
 
-                <div>
-                  <span class="inventory-field-label">Miktar</span>
-                  <v-text-field
-                    v-model.number="item.quantity"
-                    class="inventory-field"
-                    aria-label="Miktar"
-                    placeholder="5"
-                    type="number"
-                    min="1"
-                    step="1"
-                    variant="outlined"
-                    density="comfortable"
-                    :rules="[rules.positiveQuantity, rules.wholeNumber]"
-                    hide-details="auto"
-                  />
-                </div>
+                  <div v-if="item.item_type === 'existing'">
+                    <span class="inventory-field-label">Ürün ara ve seç</span>
+                    <v-autocomplete
+                      v-model="item.product"
+                      class="inventory-field"
+                      aria-label="Ürün ara ve seç"
+                      clearable
+                      density="comfortable"
+                      item-value="id"
+                      no-data-text="Ürün bulunamadı"
+                      placeholder="Ürün adı veya SKU ile ara"
+                      prepend-inner-icon="mdi-magnify"
+                      variant="outlined"
+                      :item-title="getProductOptionTitle"
+                      :items="selectableProducts"
+                      :rules="[rules.required]"
+                    />
+                    <p
+                      v-if="triedSubmit && !item.product"
+                      class="inventory-error-text"
+                    >
+                      Ürün seçilmelidir.
+                    </p>
+                  </div>
 
-                <div class="flex items-end">
-                  <v-btn
-                    :disabled="requestForm.request_items.length === 1"
-                    color="error"
-                    variant="text"
-                    @click="removeRequestItem(index)"
-                  >
-                    Sil
-                  </v-btn>
+                  <div v-else class="grid gap-3 lg:grid-cols-2">
+                    <div>
+                      <span class="inventory-field-label">Talep edilen ürün</span>
+                      <v-text-field
+                        v-model="item.requested_product_name"
+                        class="inventory-field"
+                        aria-label="Talep edilen ürün"
+                        placeholder="Örn: Porselen yemek tabağı"
+                        variant="outlined"
+                        density="comfortable"
+                        :rules="[rules.required]"
+                      />
+                    </div>
+
+                    <div>
+                      <span class="inventory-field-label">Açıklama</span>
+                      <v-text-field
+                        v-model="item.requested_product_note"
+                        class="inventory-field"
+                        aria-label="Açıklama"
+                        placeholder="Örn: Yemekhane için dayanıklı model"
+                        variant="outlined"
+                        density="comfortable"
+                        hide-details
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <span class="inventory-field-label">Miktar</span>
+                    <v-text-field
+                      v-model.number="item.quantity"
+                      class="inventory-field"
+                      aria-label="Miktar"
+                      placeholder="5"
+                      type="number"
+                      min="1"
+                      step="1"
+                      variant="outlined"
+                      density="comfortable"
+                      :rules="[rules.positiveQuantity, rules.wholeNumber]"
+                      hide-details="auto"
+                    />
+                  </div>
+
+                  <div class="flex items-end">
+                    <v-btn
+                      :disabled="requestForm.request_items.length === 1"
+                      color="error"
+                      variant="text"
+                      @click="removeRequestItem(index)"
+                    >
+                      Sil
+                    </v-btn>
+                  </div>
                 </div>
               </div>
             </div>
