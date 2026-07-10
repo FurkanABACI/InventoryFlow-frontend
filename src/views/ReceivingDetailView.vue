@@ -61,11 +61,13 @@ onMounted(() => {
       <div>
         <button
           type="button"
-          class="mb-2 inline-flex items-center gap-1 text-sm font-bold text-slate-500 transition hover:text-blue-700"
+          class="mb-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
           @click="router.push({ name: 'receiving' })"
         >
-          <v-icon icon="mdi-arrow-left" size="18" />
-          Mal kabule dön
+          <span class="grid h-6 w-6 place-items-center rounded-md bg-slate-100">
+            <v-icon icon="mdi-arrow-left" size="18" />
+          </span>
+          Listeye dön
         </button>
         <h2 class="text-xl font-bold text-slate-950">Mal kabul detayı</h2>
         <p class="text-sm text-slate-500">
