@@ -266,6 +266,7 @@ function getFilteredProducts(item) {
         product.sku,
         product.category_name,
         product.supplier_name,
+        getProductTitle(product),
       ].some((field) => String(field || "").toLowerCase().includes(searchText)),
     )
     .slice(0, 8);
@@ -605,10 +606,14 @@ onMounted(() => {
                 class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
               >
                 <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div class="inline-flex w-full rounded-lg border border-slate-200 bg-slate-50 p-1 sm:w-auto">
+                  <div>
+                    <p class="mb-2 text-xs font-bold uppercase text-slate-500">
+                      Ürün tipi
+                    </p>
+                    <div class="inline-flex w-full rounded-lg border border-slate-200 bg-slate-50 p-1 sm:w-auto">
                     <button
                       type="button"
-                      class="flex-1 rounded-md px-3 py-2 text-sm font-bold transition sm:flex-none"
+                      class="flex-1 rounded-md px-3 py-1.5 text-sm font-bold transition sm:flex-none"
                       :class="item.item_type === 'existing' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'"
                       @click="setRequestItemType(item, 'existing')"
                     >
@@ -616,12 +621,13 @@ onMounted(() => {
                     </button>
                     <button
                       type="button"
-                      class="flex-1 rounded-md px-3 py-2 text-sm font-bold transition sm:flex-none"
+                      class="flex-1 rounded-md px-3 py-1.5 text-sm font-bold transition sm:flex-none"
                       :class="item.item_type === 'custom' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'"
                       @click="setRequestItemType(item, 'custom')"
                     >
                       Ürün listede yok
                     </button>
+                    </div>
                   </div>
 
                   <v-btn
@@ -638,7 +644,28 @@ onMounted(() => {
 
                 <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_140px]">
                   <div v-if="item.item_type === 'existing'" class="space-y-3">
-                    <div>
+                    <div
+                      v-if="getSelectedProduct(item)"
+                      class="flex flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div class="min-w-0">
+                        <p class="truncate text-sm font-bold text-blue-950">
+                          {{ getSelectedProduct(item).name }}
+                        </p>
+                        <p class="mt-1 text-xs font-semibold text-blue-700">
+                          {{ getSelectedProduct(item).sku }} · stok: {{ getSelectedProduct(item).stock }}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        class="inline-flex items-center justify-center rounded-md border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100 hover:text-blue-900"
+                        @click="clearSelectedProduct(item)"
+                      >
+                        Değiştir
+                      </button>
+                    </div>
+
+                    <div v-else>
                       <span class="inventory-field-label">Ürün ara</span>
                       <v-text-field
                         v-model="item.product_search"
@@ -652,56 +679,34 @@ onMounted(() => {
                         hide-details
                         @click:clear="clearSelectedProduct(item)"
                       />
-                    </div>
 
-                    <div
-                      v-if="getSelectedProduct(item)"
-                      class="flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div>
-                        <p class="text-sm font-bold text-blue-900">
-                          {{ getSelectedProduct(item).name }}
-                        </p>
-                        <p class="text-xs font-semibold text-blue-700">
-                          {{ getSelectedProduct(item).sku }} · stok: {{ getSelectedProduct(item).stock }}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        class="text-xs font-bold text-blue-700 hover:text-blue-900"
-                        @click="clearSelectedProduct(item)"
-                      >
-                        Değiştir
-                      </button>
-                    </div>
-
-                    <div class="max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50">
-                      <button
-                        v-for="product in getFilteredProducts(item)"
-                        :key="product.id"
-                        type="button"
-                        class="flex w-full items-center justify-between gap-3 border-b border-slate-200 px-3 py-2.5 text-left last:border-b-0 hover:bg-white"
-                        :class="{ 'bg-blue-50': Number(item.product) === Number(product.id) }"
-                        @click="selectProduct(item, product)"
-                      >
-                        <span class="min-w-0">
-                          <span class="block truncate text-sm font-bold text-slate-900">
-                            {{ product.name }}
+                      <div class="mt-3 max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50">
+                        <button
+                          v-for="product in getFilteredProducts(item)"
+                          :key="product.id"
+                          type="button"
+                          class="flex w-full items-center justify-between gap-3 border-b border-slate-200 px-3 py-2.5 text-left last:border-b-0 hover:bg-white"
+                          @click="selectProduct(item, product)"
+                        >
+                          <span class="min-w-0">
+                            <span class="block truncate text-sm font-bold text-slate-900">
+                              {{ product.name }}
+                            </span>
+                            <span class="block truncate text-xs font-semibold text-slate-500">
+                              {{ product.sku }} · {{ product.category_name || "Kategori yok" }}
+                            </span>
                           </span>
-                          <span class="block truncate text-xs font-semibold text-slate-500">
-                            {{ product.sku }} · {{ product.category_name || "Kategori yok" }}
+                          <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                            stok {{ product.stock }}
                           </span>
-                        </span>
-                        <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
-                          stok {{ product.stock }}
-                        </span>
-                      </button>
+                        </button>
 
-                      <div
-                        v-if="getFilteredProducts(item).length === 0"
-                        class="px-3 py-4 text-sm font-semibold text-slate-500"
-                      >
-                        Aramaya uygun ürün bulunamadı.
+                        <div
+                          v-if="getFilteredProducts(item).length === 0"
+                          class="px-3 py-4 text-sm font-semibold text-slate-500"
+                        >
+                          Aramaya uygun ürün bulunamadı.
+                        </div>
                       </div>
                     </div>
 
