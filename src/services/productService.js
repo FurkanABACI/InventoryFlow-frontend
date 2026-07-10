@@ -6,6 +6,29 @@ export const productService = {
     return response.data
   },
 
+  async all(params = {}) {
+    const products = []
+    let page = 1
+    let hasNextPage = true
+
+    while (hasNextPage) {
+      const response = await api.get('/products/', {
+        params: { ...params, page },
+      })
+      const data = response.data
+
+      if (Array.isArray(data)) {
+        return data
+      }
+
+      products.push(...(data.results || []))
+      hasNextPage = Boolean(data.next)
+      page += 1
+    }
+
+    return products
+  },
+
   async lowStock() {
     const response = await api.get('/products/low-stock/')
     return response.data

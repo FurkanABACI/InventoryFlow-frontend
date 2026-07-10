@@ -30,6 +30,7 @@ const requestForm = reactive({
     {
       item_type: "existing",
       product: "",
+      product_search: "",
       requested_product_name: "",
       requested_product_note: "",
       quantity: 1,
@@ -63,11 +64,6 @@ const rules = {
   wholeNumber: (value) =>
     Number.isInteger(Number(value)) || "Miktar tam sayı olmalıdır.",
 };
-
-const itemTypeOptions = [
-  { title: "Mevcut ürün", value: "existing" },
-  { title: "Ürün listede yok", value: "custom" },
-];
 
 const selectableProducts = computed(() =>
   products.value.filter((product) => product.is_active !== false),
@@ -156,6 +152,7 @@ function resetRequestForm() {
     {
       item_type: "existing",
       product: "",
+      product_search: "",
       requested_product_name: "",
       requested_product_note: "",
       quantity: 1,
@@ -180,6 +177,7 @@ function addRequestItem() {
   requestForm.request_items.push({
     item_type: "existing",
     product: "",
+    product_search: "",
     requested_product_name: "",
     requested_product_note: "",
     quantity: 1,
@@ -227,18 +225,60 @@ function hasValidRequestItems() {
   );
 }
 
-function getProductOptionTitle(product) {
-  return `${product.name} - ${product.sku} (stok: ${product.stock})`;
-}
+function setRequestItemType(item, type) {
+  item.item_type = type;
 
-function changeRequestItemType(item) {
-  if (item.item_type === "existing") {
+  if (type === "existing") {
     item.requested_product_name = "";
     item.requested_product_note = "";
     return;
   }
 
   item.product = "";
+  item.product_search = "";
+}
+
+function getProductTitle(product) {
+  if (!product) {
+    return "";
+  }
+
+  return `${product.name} - ${product.sku}`;
+}
+
+function getSelectedProduct(item) {
+  return selectableProducts.value.find(
+    (product) => Number(product.id) === Number(item.product),
+  );
+}
+
+function getFilteredProducts(item) {
+  const searchText = String(item.product_search || "").trim().toLowerCase();
+
+  if (!searchText) {
+    return selectableProducts.value.slice(0, 8);
+  }
+
+  return selectableProducts.value
+    .filter((product) =>
+      [
+        product.name,
+        product.sku,
+        product.category_name,
+        product.supplier_name,
+      ].some((field) => String(field || "").toLowerCase().includes(searchText)),
+    )
+    .slice(0, 8);
+}
+
+function selectProduct(item, product) {
+  item.product = product.id;
+  item.product_search = getProductTitle(product);
+}
+
+function clearSelectedProduct(item) {
+  item.product = "";
+  item.product_search = "";
 }
 
 async function fetchPageData() {
@@ -248,11 +288,11 @@ async function fetchPageData() {
   try {
     const [requestData, productData] = await Promise.all([
       requisitionService.list(),
-      productService.list(),
+      productService.all(),
     ]);
 
     requests.value = requestData.results || requestData;
-    products.value = productData.results || productData;
+    products.value = productData;
   } catch {
     error.value = "Talepler yüklenemedi.";
   } finally {
@@ -562,43 +602,109 @@ onMounted(() => {
               <div
                 v-for="(item, index) in requestForm.request_items"
                 :key="index"
-                class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
               >
-                <div class="grid gap-3 lg:grid-cols-[170px_minmax(0,1fr)_140px_auto]">
-                  <label class="inventory-native-field">
-                    <span class="inventory-native-label">Kalem tipi</span>
-                    <select
-                      v-model="item.item_type"
-                      class="inventory-native-select"
-                      @change="changeRequestItemType(item)"
+                <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div class="inline-flex w-full rounded-lg border border-slate-200 bg-slate-50 p-1 sm:w-auto">
+                    <button
+                      type="button"
+                      class="flex-1 rounded-md px-3 py-2 text-sm font-bold transition sm:flex-none"
+                      :class="item.item_type === 'existing' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'"
+                      @click="setRequestItemType(item, 'existing')"
                     >
-                      <option
-                        v-for="option in itemTypeOptions"
-                        :key="option.value"
-                        :value="option.value"
-                      >
-                        {{ option.title }}
-                      </option>
-                    </select>
-                  </label>
+                      Mevcut ürün
+                    </button>
+                    <button
+                      type="button"
+                      class="flex-1 rounded-md px-3 py-2 text-sm font-bold transition sm:flex-none"
+                      :class="item.item_type === 'custom' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'"
+                      @click="setRequestItemType(item, 'custom')"
+                    >
+                      Ürün listede yok
+                    </button>
+                  </div>
 
-                  <div v-if="item.item_type === 'existing'">
-                    <span class="inventory-field-label">Ürün ara ve seç</span>
-                    <v-autocomplete
-                      v-model="item.product"
-                      class="inventory-field"
-                      aria-label="Ürün ara ve seç"
-                      clearable
-                      density="comfortable"
-                      item-value="id"
-                      no-data-text="Ürün bulunamadı"
-                      placeholder="Ürün adı veya SKU ile ara"
-                      prepend-inner-icon="mdi-magnify"
-                      variant="outlined"
-                      :item-title="getProductOptionTitle"
-                      :items="selectableProducts"
-                      :rules="[rules.required]"
-                    />
+                  <v-btn
+                    :disabled="requestForm.request_items.length === 1"
+                    class="self-start sm:self-auto"
+                    color="error"
+                    size="small"
+                    variant="text"
+                    @click="removeRequestItem(index)"
+                  >
+                    Sil
+                  </v-btn>
+                </div>
+
+                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_140px]">
+                  <div v-if="item.item_type === 'existing'" class="space-y-3">
+                    <div>
+                      <span class="inventory-field-label">Ürün ara</span>
+                      <v-text-field
+                        v-model="item.product_search"
+                        class="inventory-field"
+                        aria-label="Ürün ara"
+                        clearable
+                        placeholder="Ürün adı, SKU, kategori veya tedarikçi yaz"
+                        prepend-inner-icon="mdi-magnify"
+                        variant="outlined"
+                        density="comfortable"
+                        hide-details
+                        @click:clear="clearSelectedProduct(item)"
+                      />
+                    </div>
+
+                    <div
+                      v-if="getSelectedProduct(item)"
+                      class="flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p class="text-sm font-bold text-blue-900">
+                          {{ getSelectedProduct(item).name }}
+                        </p>
+                        <p class="text-xs font-semibold text-blue-700">
+                          {{ getSelectedProduct(item).sku }} · stok: {{ getSelectedProduct(item).stock }}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        class="text-xs font-bold text-blue-700 hover:text-blue-900"
+                        @click="clearSelectedProduct(item)"
+                      >
+                        Değiştir
+                      </button>
+                    </div>
+
+                    <div class="max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50">
+                      <button
+                        v-for="product in getFilteredProducts(item)"
+                        :key="product.id"
+                        type="button"
+                        class="flex w-full items-center justify-between gap-3 border-b border-slate-200 px-3 py-2.5 text-left last:border-b-0 hover:bg-white"
+                        :class="{ 'bg-blue-50': Number(item.product) === Number(product.id) }"
+                        @click="selectProduct(item, product)"
+                      >
+                        <span class="min-w-0">
+                          <span class="block truncate text-sm font-bold text-slate-900">
+                            {{ product.name }}
+                          </span>
+                          <span class="block truncate text-xs font-semibold text-slate-500">
+                            {{ product.sku }} · {{ product.category_name || "Kategori yok" }}
+                          </span>
+                        </span>
+                        <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                          stok {{ product.stock }}
+                        </span>
+                      </button>
+
+                      <div
+                        v-if="getFilteredProducts(item).length === 0"
+                        class="px-3 py-4 text-sm font-semibold text-slate-500"
+                      >
+                        Aramaya uygun ürün bulunamadı.
+                      </div>
+                    </div>
+
                     <p
                       v-if="triedSubmit && !item.product"
                       class="inventory-error-text"
@@ -650,17 +756,6 @@ onMounted(() => {
                       :rules="[rules.positiveQuantity, rules.wholeNumber]"
                       hide-details="auto"
                     />
-                  </div>
-
-                  <div class="flex items-end">
-                    <v-btn
-                      :disabled="requestForm.request_items.length === 1"
-                      color="error"
-                      variant="text"
-                      @click="removeRequestItem(index)"
-                    >
-                      Sil
-                    </v-btn>
                   </div>
                 </div>
               </div>
