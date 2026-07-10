@@ -21,6 +21,7 @@ const successSnackbar = ref(false);
 const triedSubmit = ref(false);
 const itemsPerPage = ref(10);
 const requestPage = ref(1);
+const requestStep = ref(1);
 
 const requestForm = reactive({
   department: "",
@@ -160,6 +161,7 @@ function resetRequestForm() {
   ];
   formError.value = "";
   triedSubmit.value = false;
+  requestStep.value = 1;
   requestFormRef.value?.resetValidation();
 }
 
@@ -256,7 +258,7 @@ function getFilteredProducts(item) {
   const searchText = String(item.product_search || "").trim().toLowerCase();
 
   if (!searchText) {
-    return selectableProducts.value.slice(0, 8);
+    return selectableProducts.value.slice(0, 4);
   }
 
   return selectableProducts.value
@@ -269,7 +271,28 @@ function getFilteredProducts(item) {
         getProductTitle(product),
       ].some((field) => String(field || "").toLowerCase().includes(searchText)),
     )
-    .slice(0, 8);
+    .slice(0, 4);
+}
+
+function goToRequestItems() {
+  formError.value = "";
+
+  if (!String(requestForm.department ?? "").trim()) {
+    formError.value = "Talebi açan birim seçilmelidir.";
+    return;
+  }
+
+  if (!String(requestForm.requester_name ?? "").trim()) {
+    formError.value = "Talebi ileten kişi yazılmalıdır.";
+    return;
+  }
+
+  requestStep.value = 2;
+}
+
+function goToRequestInfo() {
+  formError.value = "";
+  requestStep.value = 1;
 }
 
 function selectProduct(item, product) {
@@ -523,23 +546,50 @@ onMounted(() => {
     </v-card>
 
     <v-dialog v-model="requestDialog" max-width="920">
-      <v-card class="inventory-card overflow-hidden" elevation="0">
-        <v-card-title class="px-6 pt-6 text-lg font-bold text-slate-950">
+      <v-card
+        class="inventory-card flex max-h-[86vh] flex-col overflow-hidden"
+        elevation="0"
+      >
+        <v-card-title class="shrink-0 px-6 pt-6 text-lg font-bold text-slate-950">
           Yeni ürün talebi
         </v-card-title>
 
-        <v-card-subtitle class="px-6 text-slate-500">
+        <v-card-subtitle class="shrink-0 px-6 text-slate-500">
           Birimin istediği ürünleri seç; stok varsa teslim aşamasında otomatik
           düşülür.
         </v-card-subtitle>
 
-        <v-card-text class="px-6 pt-5">
+        <v-card-text class="min-h-0 flex-1 overflow-y-auto px-6 pt-5">
           <v-alert v-if="formError" class="mb-4" type="error" variant="tonal">
             {{ formError }}
           </v-alert>
 
+          <div class="mb-5 grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              class="rounded-lg border px-4 py-3 text-left transition"
+              :class="requestStep === 1 ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-600'"
+              @click="goToRequestInfo"
+            >
+              <span class="block text-xs font-bold uppercase">1. Adım</span>
+              <span class="mt-1 block text-sm font-bold">Talep bilgileri</span>
+            </button>
+            <button
+              type="button"
+              class="rounded-lg border px-4 py-3 text-left transition"
+              :class="requestStep === 2 ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-600'"
+              @click="goToRequestItems"
+            >
+              <span class="block text-xs font-bold uppercase">2. Adım</span>
+              <span class="mt-1 block text-sm font-bold">Ürün kalemleri</span>
+            </button>
+          </div>
+
           <v-form ref="requestFormRef" @submit.prevent="submitRequest">
-            <div class="grid gap-x-5 gap-y-5 sm:grid-cols-2">
+            <div
+              v-if="requestStep === 1"
+              class="grid gap-x-5 gap-y-5 sm:grid-cols-2"
+            >
               <div>
                 <span class="inventory-field-label">Birim</span>
                 <v-text-field
@@ -581,7 +631,7 @@ onMounted(() => {
               </label>
             </div>
 
-            <div class="mt-6 space-y-3">
+            <div v-if="requestStep === 2" class="space-y-3">
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <h3 class="font-bold text-slate-950">İstenen ürünler</h3>
@@ -693,7 +743,7 @@ onMounted(() => {
                         @click:clear="clearSelectedProduct(item)"
                       />
 
-                      <div class="mt-3 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50">
+                      <div class="mt-3 rounded-lg border border-slate-200 bg-slate-50">
                         <button
                           v-for="product in getFilteredProducts(item)"
                           :key="product.id"
@@ -791,9 +841,26 @@ onMounted(() => {
           </v-form>
         </v-card-text>
 
-        <v-card-actions class="gap-2 px-6 pb-6 pt-1">
+        <v-card-actions class="shrink-0 gap-2 border-t border-slate-200 bg-white px-6 py-4">
           <v-btn variant="text" @click="closeRequestDialog"> Vazgeç </v-btn>
+          <v-spacer />
           <v-btn
+            v-if="requestStep === 2"
+            variant="text"
+            @click="goToRequestInfo"
+          >
+            Geri
+          </v-btn>
+          <v-btn
+            v-if="requestStep === 1"
+            color="primary"
+            variant="flat"
+            @click="goToRequestItems"
+          >
+            Ürünlere geç
+          </v-btn>
+          <v-btn
+            v-else
             color="primary"
             :loading="creating"
             variant="flat"
