@@ -1,21 +1,25 @@
 <script setup>
 import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
+import { useSettingsStore } from '../stores/settings'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
+const { t } = useI18n()
 
 const menuItems = [
-  { title: 'Panel', icon: 'P', to: '/', requiresInventoryManager: true },
-  { title: 'Ürünler', icon: 'Ü', to: '/products', requiresInventoryManager: true },
-  { title: 'Tedarikçiler', icon: 'T', to: '/suppliers', requiresInventoryManager: true },
-  { title: 'Mal kabul', icon: 'M', to: '/receiving', requiresInventoryManager: true },
-  { title: 'Talepler', icon: 'İ', to: '/requisitions' },
-  { title: 'Hareketler', icon: 'H', to: '/stock-movements', requiresInventoryManager: true },
-  { title: 'Düşük stok', icon: 'S', to: '/low-stock', requiresInventoryManager: true },
-  { title: 'Kullanıcılar', icon: 'K', to: '/users', requiresAdmin: true },
+  { titleKey: 'nav.dashboard', icon: 'P', to: '/', requiresInventoryManager: true },
+  { titleKey: 'nav.products', icon: 'Ü', to: '/products', requiresInventoryManager: true },
+  { titleKey: 'nav.suppliers', icon: 'T', to: '/suppliers', requiresInventoryManager: true },
+  { titleKey: 'nav.receiving', icon: 'M', to: '/receiving', requiresInventoryManager: true },
+  { titleKey: 'nav.requisitions', icon: 'İ', to: '/requisitions' },
+  { titleKey: 'nav.stockMovements', icon: 'H', to: '/stock-movements', requiresInventoryManager: true },
+  { titleKey: 'nav.lowStock', icon: 'S', to: '/low-stock', requiresInventoryManager: true },
+  { titleKey: 'nav.users', icon: 'K', to: '/users', requiresAdmin: true },
 ]
 
 const visibleMenuItems = computed(() =>
@@ -33,12 +37,21 @@ const visibleMenuItems = computed(() =>
 )
 
 const pageTitle = computed(() => {
-  if (route.meta.title) {
-    return route.meta.title
+  const activeItem = menuItems.find((item) => item.to === route.path || route.path.startsWith(`${item.to}/`))
+
+  if (activeItem) {
+    return t(activeItem.titleKey)
   }
 
-  const activeItem = menuItems.find((item) => item.to === route.path || route.path.startsWith(`${item.to}/`))
-  return activeItem?.title || 'InventoryFlow'
+  if (route.name === 'receiving-detail') {
+    return t('nav.receivingDetail')
+  }
+
+  if (route.name === 'requisition-detail') {
+    return t('nav.requisitionDetail')
+  }
+
+  return t('app.name')
 })
 
 function isMenuItemActive(item) {
@@ -59,8 +72,8 @@ async function handleLogout() {
           IF
         </div>
         <div>
-          <p class="font-bold leading-5">InventoryFlow</p>
-          <p class="text-xs text-slate-500">Stok yönetimi</p>
+          <p class="font-bold leading-5">{{ t('app.name') }}</p>
+          <p class="text-xs text-slate-500">{{ t('app.subtitle') }}</p>
         </div>
       </div>
 
@@ -78,7 +91,7 @@ async function handleLogout() {
           >
             {{ item.icon }}
           </span>
-          <span>{{ item.title }}</span>
+          <span>{{ t(item.titleKey) }}</span>
         </RouterLink>
       </nav>
     </aside>
@@ -91,16 +104,39 @@ async function handleLogout() {
               IF
             </div>
             <div>
-              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">InventoryFlow</p>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ t('app.name') }}</p>
               <h1 class="text-lg font-bold">{{ pageTitle }}</h1>
             </div>
           </div>
 
           <div class="flex items-center gap-3">
+            <div class="hidden items-center gap-2 md:flex">
+              <button
+                type="button"
+                class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
+                :title="t('settings.language')"
+                @click="settingsStore.toggleLocale"
+              >
+                {{ settingsStore.locale === 'tr' ? t('settings.english') : t('settings.turkish') }}
+              </button>
+              <div class="flex rounded-lg border border-slate-200 bg-white p-1">
+                <button
+                  v-for="themeOption in ['light', 'dark', 'system']"
+                  :key="themeOption"
+                  type="button"
+                  class="rounded-md px-2.5 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-100"
+                  :class="{ 'bg-blue-50 text-blue-700': settingsStore.theme === themeOption }"
+                  :title="t('settings.theme')"
+                  @click="settingsStore.setTheme(themeOption)"
+                >
+                  {{ t(`settings.${themeOption}`) }}
+                </button>
+              </div>
+            </div>
             <div class="hidden text-right sm:block">
               <p class="text-sm font-semibold text-slate-700">{{ authStore.userFullName }}</p>
               <p class="text-xs text-slate-500">
-                {{ authStore.roleLabel }}
+                {{ authStore.roleLabel || t('roles.department') }}
                 <span v-if="authStore.userDepartment"> · {{ authStore.userDepartment }}</span>
               </p>
             </div>
@@ -109,7 +145,7 @@ async function handleLogout() {
               class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
               @click="handleLogout"
             >
-              Çıkış
+              {{ t('auth.logout') }}
             </button>
           </div>
         </div>
@@ -122,8 +158,36 @@ async function handleLogout() {
             class="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-slate-600"
             :class="{ 'bg-blue-50 text-blue-700': isMenuItemActive(item) }"
           >
-            {{ item.title }}
+            {{ t(item.titleKey) }}
           </RouterLink>
+          <button
+            type="button"
+            class="whitespace-nowrap rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600"
+            @click="settingsStore.toggleLocale"
+          >
+            {{ settingsStore.locale === 'tr' ? t('settings.english') : t('settings.turkish') }}
+          </button>
+          <button
+            type="button"
+            class="whitespace-nowrap rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600"
+            @click="settingsStore.setTheme('light')"
+          >
+            {{ t('settings.light') }}
+          </button>
+          <button
+            type="button"
+            class="whitespace-nowrap rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600"
+            @click="settingsStore.setTheme('dark')"
+          >
+            {{ t('settings.dark') }}
+          </button>
+          <button
+            type="button"
+            class="whitespace-nowrap rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600"
+            @click="settingsStore.setTheme('system')"
+          >
+            {{ t('settings.system') }}
+          </button>
         </nav>
       </header>
 

@@ -61,6 +61,18 @@ export default createVuetify({
           success: '#16a34a',
         },
       },
+      inventoryDark: {
+        dark: true,
+        colors: {
+          background: '#101522',
+          surface: '#151c2b',
+          primary: '#60a5fa',
+          secondary: '#2dd4bf',
+          error: '#f87171',
+          warning: '#fbbf24',
+          success: '#34d399',
+        },
+      },
     },
   },
 })

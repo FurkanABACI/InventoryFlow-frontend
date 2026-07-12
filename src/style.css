@@ -226,4 +226,113 @@
     background: #fff1f2 !important;
     color: #e11d48 !important;
   }
+
+  .theme-dark body {
+    background: #101522;
+    color: #e5edf8;
+  }
+
+  .theme-dark .inventory-card {
+    border-color: #253246;
+    background: #151c2b;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  }
+
+  .theme-dark .inventory-section-header,
+  .theme-dark .inventory-products-table thead th {
+    background: #151c2b;
+  }
+
+  .theme-dark .inventory-field .v-field,
+  .theme-dark .inventory-native-select,
+  .theme-dark .inventory-native-textarea {
+    background: #101827;
+    color: #e5edf8;
+    box-shadow: inset 0 0 0 1px #334155;
+  }
+
+  .theme-dark .inventory-field .v-field:hover,
+  .theme-dark .inventory-native-select:hover,
+  .theme-dark .inventory-native-textarea:hover {
+    border-color: #475569;
+    box-shadow: inset 0 0 0 1px #475569;
+  }
+
+  .theme-dark .inventory-field .v-field--focused {
+    box-shadow: inset 0 0 0 2px #60a5fa, 0 0 0 4px rgba(96, 165, 250, 0.18);
+  }
+
+  .theme-dark .inventory-field-label,
+  .theme-dark .inventory-native-label,
+  .theme-dark .inventory-products-table thead th {
+    color: #cbd5e1;
+  }
+
+  .theme-dark .inventory-help-text,
+  .theme-dark .inventory-field .v-messages,
+  .theme-dark .inventory-empty-state__text {
+    color: #94a3b8;
+  }
+
+  .theme-dark .inventory-empty-state__icon {
+    background: rgba(96, 165, 250, 0.16);
+    color: #93c5fd;
+  }
+
+  .theme-dark .inventory-empty-state__title {
+    color: #f8fafc;
+  }
+
+  .theme-dark .inventory-products-table tbody td {
+    border-top-color: #243044;
+    color: #dbe4ef;
+  }
+
+  .theme-dark .inventory-row-action {
+    color: #cbd5e1 !important;
+  }
+
+  .theme-dark .inventory-row-action:hover {
+    background: #1f2a3d !important;
+    color: #93c5fd !important;
+  }
+
+  .theme-dark .bg-white,
+  .theme-dark .bg-white\/95 {
+    background-color: #151c2b !important;
+  }
+
+  .theme-dark .bg-slate-50,
+  .theme-dark .bg-slate-100 {
+    background-color: #101522 !important;
+  }
+
+  .theme-dark .bg-slate-200 {
+    background-color: #334155 !important;
+  }
+
+  .theme-dark .border-slate-100,
+  .theme-dark .border-slate-200 {
+    border-color: #253246 !important;
+  }
+
+  .theme-dark .text-slate-950,
+  .theme-dark .text-slate-900,
+  .theme-dark .text-slate-800,
+  .theme-dark .text-slate-700 {
+    color: #f8fafc !important;
+  }
+
+  .theme-dark .text-slate-600,
+  .theme-dark .text-slate-500 {
+    color: #94a3b8 !important;
+  }
+
+  .theme-dark .hover\:bg-slate-100:hover {
+    background-color: #1f2a3d !important;
+  }
+
+  .theme-dark .hover\:text-slate-950:hover {
+    color: #f8fafc !important;
+  }
 }

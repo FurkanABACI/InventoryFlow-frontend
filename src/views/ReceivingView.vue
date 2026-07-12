@@ -1,9 +1,11 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { catalogService } from "../services/catalogService";
 import { productService } from "../services/productService";
 import { receivingService } from "../services/receivingService";
 
+const { t } = useI18n();
 const receipts = ref([]);
 const suppliers = ref([]);
 const products = ref([]);
@@ -46,14 +48,14 @@ const quickProductForm = reactive({
   low_stock_threshold: 5,
 });
 
-const receiptHeaders = [
-  { title: "Tedarikçi", key: "supplier_name" },
-  { title: "Belge no", key: "document_no" },
-  { title: "Kalem", key: "itemsCount" },
-  { title: "Toplam adet", key: "totalQuantity" },
-  { title: "Tarih", key: "receivedDate" },
-  { title: "İşlemler", key: "actions", sortable: false, align: "end" },
-];
+const receiptHeaders = computed(() => [
+  { title: t("pages.receiving.supplier"), key: "supplier_name" },
+  { title: t("pages.receiving.documentNo"), key: "document_no" },
+  { title: t("pages.receiving.itemCount"), key: "itemsCount" },
+  { title: t("pages.receiving.totalQuantity"), key: "totalQuantity" },
+  { title: t("pages.receiving.date"), key: "receivedDate" },
+  { title: t("pages.products.actions"), key: "actions", sortable: false, align: "end" },
+]);
 
 const itemsPerPageOptions = [
   { title: "10 kayıt", value: 10 },
@@ -63,19 +65,19 @@ const itemsPerPageOptions = [
 ];
 
 const rules = {
-  required: (value) => Boolean(String(value ?? "").trim()) || "Bu alan zorunludur.",
+  required: (value) => Boolean(String(value ?? "").trim()) || t("validation.required"),
   sku: (value) =>
-    !String(value ?? "").includes(" ") || "SKU boşluk içermemelidir.",
+    !String(value ?? "").includes(" ") || t("validation.skuNoSpace"),
   positivePrice: (value) =>
-    Number(value) > 0 || "Satış/list fiyatı 0'dan büyük olmalıdır.",
+    Number(value) > 0 || t("validation.positivePrice"),
   nonNegativeMoney: (value) =>
-    Number(value) >= 0 || "Birim maliyet negatif olamaz.",
+    Number(value) >= 0 || t("validation.nonNegativeCost"),
   nonNegativeNumber: (value) =>
-    Number(value) >= 0 || "Bu değer negatif olamaz.",
+    Number(value) >= 0 || t("validation.nonNegative"),
   positiveQuantity: (value) =>
-    Number(value) > 0 || "Miktar 0'dan büyük olmalıdır.",
+    Number(value) > 0 || t("validation.positiveQuantity"),
   wholeNumber: (value) =>
-    Number.isInteger(Number(value)) || "Miktar tam sayı olmalıdır.",
+    Number.isInteger(Number(value)) || t("validation.wholeQuantity"),
 };
 
 function getCreatedTime(item) {
@@ -376,14 +378,14 @@ onMounted(() => {
     <v-card class="inventory-card overflow-hidden" elevation="0">
       <div class="inventory-section-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 class="font-bold text-slate-950">Mal kabul</h2>
+          <h2 class="font-bold text-slate-950">{{ t('pages.receiving.title') }}</h2>
           <p class="text-sm text-slate-500">
-            Anlaşmalı tedarikçilerden gelen ürünleri stoğa işle.
+            {{ t('pages.receiving.subtitle') }}
           </p>
         </div>
 
         <v-btn color="primary" prepend-icon="mdi-plus" variant="flat" @click="openReceiptDialog">
-          Yeni mal kabul
+          {{ t('pages.receiving.newReceipt') }}
         </v-btn>
       </div>
 
@@ -420,13 +422,13 @@ onMounted(() => {
         :items-per-page="receiptItemsPerPage"
         hide-default-footer
         item-value="id"
-        loading-text="Mal kabul kayıtları yükleniyor..."
-        no-data-text="Henüz mal kabul kaydı yok."
+        :loading-text="t('pages.receiving.loading')"
+        :no-data-text="t('pages.receiving.noData')"
       >
         <template #item.actions="{ item }">
           <div class="flex justify-end gap-1">
             <v-btn
-              aria-label="Mal kabul detayını aç"
+              :aria-label="t('pages.receiving.detail')"
               class="inventory-row-action"
               icon="mdi-eye-outline"
               size="small"

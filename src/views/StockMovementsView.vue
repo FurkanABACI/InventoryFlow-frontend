@@ -1,21 +1,23 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { stockService } from "../services/stockService";
 
+const { t } = useI18n();
 const movements = ref([]);
 const loading = ref(false);
 const error = ref("");
 const itemsPerPage = ref(10);
 const movementPage = ref(1);
 
-const movementHeaders = [
-  { title: "Ürün", key: "product_name" },
+const movementHeaders = computed(() => [
+  { title: t("pages.stockMovements.product"), key: "product_name" },
   { title: "SKU", key: "sku" },
-  { title: "Tip", key: "movement_type" },
-  { title: "Miktar", key: "quantity" },
-  { title: "Kaynak", key: "source" },
-  { title: "Tarih", key: "createdDate" },
-];
+  { title: t("pages.stockMovements.type"), key: "movement_type" },
+  { title: t("pages.stockMovements.quantity"), key: "quantity" },
+  { title: t("pages.stockMovements.source"), key: "source" },
+  { title: t("pages.stockMovements.date"), key: "createdDate" },
+]);
 
 const itemsPerPageOptions = [
   { title: "10 kayıt", value: 10 },
@@ -123,9 +125,9 @@ onMounted(() => {
     <v-card class="inventory-card overflow-hidden" elevation="0">
       <div class="inventory-section-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 class="font-bold text-slate-950">Stok hareketleri</h2>
+          <h2 class="font-bold text-slate-950">{{ t('pages.stockMovements.title') }}</h2>
           <p class="text-sm text-slate-500">
-            Mal kabul girişlerini ve talep teslim çıkışlarını tek geçmişte izle.
+            {{ t('pages.stockMovements.subtitle') }}
           </p>
         </div>
       </div>
@@ -158,8 +160,8 @@ onMounted(() => {
         :page="movementPage"
         hide-default-footer
         item-value="id"
-        loading-text="Stok hareketleri yükleniyor..."
-        no-data-text="Henüz stok hareketi yok."
+        :loading-text="t('pages.stockMovements.loading')"
+        :no-data-text="t('pages.stockMovements.noData')"
       >
         <template #item.movement_type="{ item }">
           <span
@@ -180,9 +182,9 @@ onMounted(() => {
           <div class="inventory-empty-state">
             <div>
               <div class="inventory-empty-state__icon">H</div>
-              <p class="inventory-empty-state__title">Henüz hareket yok</p>
+              <p class="inventory-empty-state__title">{{ t('pages.stockMovements.emptyTitle') }}</p>
               <p class="inventory-empty-state__text">
-                Mal kabul veya talep teslimi yapıldığında stok hareketleri burada oluşur.
+                {{ t('pages.stockMovements.emptyText') }}
               </p>
             </div>
           </div>

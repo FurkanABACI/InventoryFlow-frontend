@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { authService } from "../services/authService";
+import { i18n } from "../plugins/i18n";
 
 const TOKEN_KEY = "inventoryflow_token";
 const USER_KEY = "inventoryflow_user";
@@ -15,7 +16,7 @@ export const useAuthStore = defineStore("auth", {
   getters: {
     isAuthenticated: (state) => Boolean(state.token),
     userFullName: (state) =>
-      state.user?.full_name || state.user?.username || "Kullanici",
+      state.user?.full_name || state.user?.username || i18n.global.t("auth.fallbackUser"),
     userRole: (state) => {
       if (state.user?.role) {
         return state.user.role;
@@ -32,7 +33,7 @@ export const useAuthStore = defineStore("auth", {
       return "department";
     },
     userDepartment: (state) => state.user?.department || "",
-    roleLabel: (state) => state.user?.role_label || "Birim Kullanıcısı",
+    roleLabel: (state) => state.user?.role_label || i18n.global.t("roles.department"),
     canManageInventory: (state) => {
       if (typeof state.user?.can_manage_inventory === "boolean") {
         return state.user.can_manage_inventory;
@@ -64,7 +65,7 @@ export const useAuthStore = defineStore("auth", {
       } catch (error) {
         this.error =
           error.response?.data?.detail ||
-          "Giriş yapılamadı bilgilerinizi kontrol edin.";
+          i18n.global.t("auth.loginFailed");
         throw error;
       } finally {
         this.loading = false;

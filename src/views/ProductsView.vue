@@ -1,11 +1,13 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { useProductsStore } from "../stores/products";
 import { catalogService } from "../services/catalogService";
 
 const productsStore = useProductsStore();
 const { products, loading, creating, error } = storeToRefs(productsStore);
+const { t } = useI18n();
 const search = ref("");
 const itemsPerPage = ref(10);
 const productPage = ref(1);
@@ -51,15 +53,15 @@ const quickCategoryForm = reactive({
   description: "",
 });
 
-const productHeaders = [
-  { title: "Ürün", key: "name" },
+const productHeaders = computed(() => [
+  { title: t("pages.products.product"), key: "name" },
   { title: "SKU", key: "sku" },
-  { title: "Kategori", key: "categoryName" },
-  { title: "Tedarikçi", key: "supplierName" },
-  { title: "Stok", key: "stock" },
-  { title: "Satış fiyatı", key: "price" },
-  { title: "İşlemler", key: "actions", sortable: false, align: "end" },
-];
+  { title: t("pages.products.category"), key: "categoryName" },
+  { title: t("pages.products.supplier"), key: "supplierName" },
+  { title: t("pages.products.stock"), key: "stock" },
+  { title: t("pages.products.price"), key: "price" },
+  { title: t("pages.products.actions"), key: "actions", sortable: false, align: "end" },
+]);
 
 const itemsPerPageOptions = [
   { title: "10 kayıt", value: 10 },
@@ -73,17 +75,17 @@ function getCreatedTime(item) {
 }
 
 const rules = {
-  required: (value) => Boolean(String(value ?? "").trim()) || "Bu alan zorunludur.",
+  required: (value) => Boolean(String(value ?? "").trim()) || t("validation.required"),
   sku: (value) =>
-    !String(value ?? "").includes(" ") || "SKU boşluk içermemelidir.",
+    !String(value ?? "").includes(" ") || t("validation.skuNoSpace"),
   positivePrice: (value) =>
-    Number(value) > 0 || "Satış/list fiyatı 0'dan büyük olmalıdır.",
+    Number(value) > 0 || t("validation.positivePrice"),
   nonNegativeNumber: (value) =>
-    Number(value) >= 0 || "Bu değer negatif olamaz.",
+    Number(value) >= 0 || t("validation.nonNegative"),
   wholeNumber: (value) =>
-    Number.isInteger(Number(value)) || "Bu alana tam sayı girilmelidir.",
+    Number.isInteger(Number(value)) || t("validation.wholeNumber"),
   email: (value) =>
-    !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value)) || "Geçerli bir e-posta yaz.",
+    !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value)) || t("validation.email"),
 };
 
 function getStockStatus(product) {
@@ -93,20 +95,20 @@ function getStockStatus(product) {
   if (stock === 0) {
     return {
       color: "error",
-      text: "Stok yok",
+      text: t("pages.products.outOfStock"),
     };
   }
 
   if (stock <= threshold) {
     return {
       color: "warning",
-      text: "Düşük stok",
+      text: t("pages.dashboard.lowStock"),
     };
   }
 
   return {
     color: "success",
-    text: "Yeterli",
+    text: t("pages.products.enoughStock"),
   };
 }
 
@@ -469,9 +471,9 @@ onMounted(() => {
         class="inventory-section-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
       >
         <div>
-          <h2 class="font-bold text-slate-950">Ürünler</h2>
+          <h2 class="font-bold text-slate-950">{{ t('pages.products.title') }}</h2>
           <p class="text-sm text-slate-500">
-            {{ tableProducts.length }} ürün listeleniyor
+            {{ t('pages.products.listed', { count: tableProducts.length }) }}
           </p>
         </div>
 
@@ -482,7 +484,7 @@ onMounted(() => {
           variant="flat"
           @click="openProductDialog"
         >
-          Yeni ürün
+          {{ t('pages.products.newProduct') }}
         </v-btn>
       </div>
 
@@ -492,12 +494,12 @@ onMounted(() => {
         class="grid gap-4 px-6 py-5 lg:grid-cols-[minmax(0,1fr)_210px] lg:items-start"
       >
         <div>
-          <span class="inventory-field-label">Ürün, SKU veya tedarikçi ara</span>
+          <span class="inventory-field-label">{{ t('pages.products.searchLabel') }}</span>
           <v-text-field
             v-model="search"
             class="inventory-field"
-            aria-label="Ürün, SKU veya tedarikçi ara"
-            placeholder="Örn: monitör, MON-001 veya tedarikçi adı"
+            :aria-label="t('pages.products.searchLabel')"
+            :placeholder="t('pages.products.searchPlaceholder')"
             prepend-inner-icon="mdi-magnify"
             variant="outlined"
             density="comfortable"
@@ -536,8 +538,8 @@ onMounted(() => {
         :items-per-page="itemsPerPage"
         hide-default-footer
         item-value="id"
-        loading-text="Ürünler yükleniyor..."
-        no-data-text="Bu aramaya uygun ürün bulunamadı."
+        :loading-text="t('pages.products.loading')"
+        :no-data-text="t('pages.products.noData')"
       >
         <template #item.stock="{ item, value }">
           <span

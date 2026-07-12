@@ -1,10 +1,12 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { receivingService } from "../services/receivingService";
 
 const route = useRoute();
 const router = useRouter();
+const { locale, t } = useI18n();
 const receipt = ref(null);
 const loading = ref(false);
 const error = ref("");
@@ -27,11 +29,13 @@ const receivedDate = computed(() => {
     return "-";
   }
 
-  return new Date(receipt.value.received_at).toLocaleString("tr-TR");
+  return new Date(receipt.value.received_at).toLocaleString(
+    locale.value === "tr" ? "tr-TR" : "en-US",
+  );
 });
 
 function formatMoney(value) {
-  return new Intl.NumberFormat("tr-TR", {
+  return new Intl.NumberFormat(locale.value === "tr" ? "tr-TR" : "en-US", {
     style: "currency",
     currency: "TRY",
   }).format(Number(value || 0));
@@ -44,7 +48,7 @@ async function fetchReceipt() {
   try {
     receipt.value = await receivingService.detail(route.params.id);
   } catch {
-    error.value = "Mal kabul detayı yüklenemedi.";
+    error.value = t("pages.receiving.detailLoadError");
   } finally {
     loading.value = false;
   }
@@ -67,11 +71,11 @@ onMounted(() => {
           <span class="grid h-6 w-6 place-items-center rounded-md bg-slate-100">
             <v-icon icon="mdi-arrow-left" size="18" />
           </span>
-          Listeye dön
+          {{ t('common.backToList') }}
         </button>
-        <h2 class="text-xl font-bold text-slate-950">Mal kabul detayı</h2>
+        <h2 class="text-xl font-bold text-slate-950">{{ t('pages.receiving.detailTitle') }}</h2>
         <p class="text-sm text-slate-500">
-          Bu kayıtta depoya hangi ürünlerin girdiğini ve maliyetlerini incele.
+          {{ t('pages.receiving.detailSubtitle') }}
         </p>
       </div>
     </div>
@@ -85,27 +89,27 @@ onMounted(() => {
     <template v-else-if="receipt">
       <div class="grid gap-4 md:grid-cols-3">
         <article class="inventory-card p-5">
-          <p class="text-sm font-medium text-slate-500">Tedarikçi</p>
+          <p class="text-sm font-medium text-slate-500">{{ t('pages.receiving.supplier') }}</p>
           <p class="mt-2 text-lg font-bold text-slate-950">
             {{ receipt.supplier_name }}
           </p>
           <p class="mt-1 text-sm text-slate-500">
-            {{ receipt.document_no || "Belge no girilmemiş" }}
+            {{ receipt.document_no || t('pages.receiving.noDocumentEntered') }}
           </p>
         </article>
 
         <article class="inventory-card p-5">
-          <p class="text-sm font-medium text-slate-500">Toplam adet</p>
+          <p class="text-sm font-medium text-slate-500">{{ t('pages.receiving.totalQuantity') }}</p>
           <p class="mt-2 text-3xl font-bold text-slate-950">
             {{ totalQuantity }}
           </p>
           <p class="mt-1 text-sm text-slate-500">
-            {{ items.length }} kalem ürün
+            {{ items.length }} {{ t('pages.requisitions.itemCount') }}
           </p>
         </article>
 
         <article class="inventory-card p-5">
-          <p class="text-sm font-medium text-slate-500">Toplam maliyet</p>
+          <p class="text-sm font-medium text-slate-500">{{ t('pages.receiving.totalCost') }}</p>
           <p class="mt-2 text-3xl font-bold text-slate-950">
             {{ formatMoney(totalCost) }}
           </p>
@@ -117,9 +121,9 @@ onMounted(() => {
 
       <v-card class="inventory-card overflow-hidden" elevation="0">
         <div class="inventory-section-header border-b border-slate-200">
-          <h3 class="font-bold text-slate-950">Gelen ürünler</h3>
+          <h3 class="font-bold text-slate-950">{{ t('pages.receiving.incomingProducts') }}</h3>
           <p class="text-sm text-slate-500">
-            Her satır bu mal kabul sırasında stoğa eklenen ürünü gösterir.
+            {{ t('pages.receiving.incomingProductsText') }}
           </p>
         </div>
 
@@ -127,11 +131,11 @@ onMounted(() => {
           <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50 text-left text-xs font-bold uppercase text-slate-500">
               <tr>
-                <th class="px-6 py-4">Ürün</th>
+                <th class="px-6 py-4">{{ t('pages.products.product') }}</th>
                 <th class="px-6 py-4">SKU</th>
-                <th class="px-6 py-4 text-right">Miktar</th>
-                <th class="px-6 py-4 text-right">Birim maliyet</th>
-                <th class="px-6 py-4 text-right">Satır toplamı</th>
+                <th class="px-6 py-4 text-right">{{ t('pages.stockMovements.quantity') }}</th>
+                <th class="px-6 py-4 text-right">{{ t('pages.receiving.unitCost') }}</th>
+                <th class="px-6 py-4 text-right">{{ t('pages.receiving.rowTotal') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -162,9 +166,9 @@ onMounted(() => {
       </v-card>
 
       <v-card class="inventory-card p-5" elevation="0">
-        <p class="text-sm font-medium text-slate-500">Not</p>
+        <p class="text-sm font-medium text-slate-500">{{ t('pages.requisitions.note') }}</p>
         <p class="mt-2 text-sm leading-6 text-slate-700">
-          {{ receipt.note || "Bu mal kabul için not girilmemiş." }}
+          {{ receipt.note || t('pages.receiving.noNote') }}
         </p>
       </v-card>
     </template>

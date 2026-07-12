@@ -21,6 +21,14 @@ export const requisitionService = {
     return response.data
   },
 
+  async linkItemProduct(requestId, itemId, productId) {
+    const response = await api.post(
+      `/stock-requests/${requestId}/items/${itemId}/link-product/`,
+      { product: productId },
+    )
+    return response.data
+  },
+
   async cancel(requestId) {
     const response = await api.post(`/stock-requests/${requestId}/cancel/`)
     return response.data

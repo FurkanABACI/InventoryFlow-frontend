@@ -1,10 +1,12 @@
 <script setup>
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 import { useProductsStore } from '../stores/products'
 
 const productsStore = useProductsStore()
 const { products, loading, error } = storeToRefs(productsStore)
+const { t } = useI18n()
 
 onMounted(() => {
   productsStore.fetchLowStock()
@@ -23,8 +25,8 @@ onMounted(() => {
 
     <v-card class="inventory-card overflow-hidden" elevation="0">
       <div class="border-b border-slate-200 px-6 py-5">
-        <h2 class="font-bold text-slate-950">Düşük stok ürünleri</h2>
-        <p class="text-sm text-slate-500">Tükenme riski olan ürünleri önceliklendir.</p>
+        <h2 class="font-bold text-slate-950">{{ t('pages.lowStock.title') }}</h2>
+        <p class="text-sm text-slate-500">{{ t('pages.lowStock.subtitle') }}</p>
       </div>
 
       <v-progress-linear v-if="loading" indeterminate color="primary" />
@@ -32,9 +34,9 @@ onMounted(() => {
       <div v-else-if="products.length === 0" class="inventory-empty-state">
         <div>
           <div class="inventory-empty-state__icon">✓</div>
-          <p class="inventory-empty-state__title">Kritik stokta ürün yok</p>
+          <p class="inventory-empty-state__title">{{ t('pages.lowStock.emptyTitle') }}</p>
           <p class="inventory-empty-state__text">
-            Şu an tüm ürünler belirlenen düşük stok eşiğinin üzerinde görünüyor.
+            {{ t('pages.lowStock.emptyText') }}
           </p>
         </div>
       </div>
@@ -51,7 +53,7 @@ onMounted(() => {
           </div>
 
           <v-chip color="warning" variant="tonal">
-            {{ product.stock }} stok
+            {{ product.stock }} {{ t('pages.lowStock.stockSuffix') }}
           </v-chip>
         </li>
       </ul>

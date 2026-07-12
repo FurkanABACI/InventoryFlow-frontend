@@ -1,12 +1,14 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { productService } from "../services/productService";
 import { requisitionService } from "../services/requisitionService";
 import { useAuthStore } from "../stores/auth";
 
 const authStore = useAuthStore();
 const router = useRouter();
+const { t } = useI18n();
 const requests = ref([]);
 const products = ref([]);
 const loading = ref(false);
@@ -39,16 +41,16 @@ const requestForm = reactive({
   ],
 });
 
-const requestHeaders = [
-  { title: "Birim", key: "department" },
-  { title: "Talep eden", key: "requester_name" },
-  { title: "Ürünler", key: "itemsPreview" },
-  { title: "Kalem", key: "itemsCount" },
-  { title: "Toplam adet", key: "total_quantity" },
-  { title: "Durum", key: "status" },
-  { title: "Tarih", key: "createdDate" },
-  { title: "İşlemler", key: "actions", sortable: false, align: "end" },
-];
+const requestHeaders = computed(() => [
+  { title: t("pages.requisitions.department"), key: "department" },
+  { title: t("pages.requisitions.requester"), key: "requester_name" },
+  { title: t("pages.requisitions.items"), key: "itemsPreview" },
+  { title: t("pages.requisitions.itemCount"), key: "itemsCount" },
+  { title: t("pages.requisitions.totalQuantity"), key: "total_quantity" },
+  { title: t("pages.requisitions.status"), key: "status" },
+  { title: t("pages.requisitions.date"), key: "createdDate" },
+  { title: t("pages.products.actions"), key: "actions", sortable: false, align: "end" },
+]);
 
 const itemsPerPageOptions = [
   { title: "10 kayıt", value: 10 },
@@ -59,11 +61,11 @@ const itemsPerPageOptions = [
 
 const rules = {
   required: (value) =>
-    Boolean(String(value ?? "").trim()) || "Bu alan zorunludur.",
+    Boolean(String(value ?? "").trim()) || t("validation.required"),
   positiveQuantity: (value) =>
-    Number(value) > 0 || "Miktar 0'dan büyük olmalıdır.",
+    Number(value) > 0 || t("validation.positiveQuantity"),
   wholeNumber: (value) =>
-    Number.isInteger(Number(value)) || "Miktar tam sayı olmalıdır.",
+    Number.isInteger(Number(value)) || t("validation.wholeQuantity"),
 };
 
 const selectableProducts = computed(() =>
@@ -413,10 +415,9 @@ onMounted(() => {
         class="inventory-section-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
       >
         <div>
-          <h2 class="font-bold text-slate-950">Talepler</h2>
+          <h2 class="font-bold text-slate-950">{{ t('pages.requisitions.title') }}</h2>
           <p class="text-sm text-slate-500">
-            Birimlerin ürün isteklerini aç, stok uygunsa teslim ederek stoktan
-            düş.
+            {{ t('pages.requisitions.subtitle') }}
           </p>
         </div>
 
@@ -426,7 +427,7 @@ onMounted(() => {
           variant="flat"
           @click="openRequestDialog"
         >
-          Yeni talep
+          {{ t('pages.requisitions.newRequest') }}
         </v-btn>
       </div>
 
@@ -458,8 +459,8 @@ onMounted(() => {
         :page="requestPage"
         hide-default-footer
         item-value="id"
-        loading-text="Talepler yükleniyor..."
-        no-data-text="Kayıtlı talep bulunamadı."
+        :loading-text="t('pages.requisitions.loading')"
+        :no-data-text="t('pages.requisitions.noData')"
       >
         <template #item.status="{ item }">
           <span
@@ -472,28 +473,28 @@ onMounted(() => {
 
         <template #item.itemsPreview="{ item }">
           <span class="text-sm font-medium text-slate-700">
-            {{ getTableItem(item).itemsPreview || "Ürün bilgisi yok" }}
+            {{ getTableItem(item).itemsPreview || t('pages.requisitions.noProductInfo') }}
           </span>
         </template>
 
         <template #item.actions="{ item }">
           <div class="flex justify-end gap-1">
             <v-btn
-              aria-label="Talep detayını görüntüle"
+              :aria-label="t('pages.requisitions.detail')"
               class="inventory-row-action"
               icon="mdi-eye-outline"
               size="small"
-              title="Talep detayını görüntüle"
+              :title="t('pages.requisitions.detail')"
               variant="text"
               @click="openRequestDetail(item)"
             />
             <v-btn
-              v-if="getTableItem(item).status === 'pending'"
-              aria-label="Talebi teslim et"
+              v-if="authStore.canManageInventory && (getTableItem(item).status === 'pending' || getTableItem(item).can_fulfill)"
+              :aria-label="t('pages.requisitions.deliver')"
               class="inventory-row-action"
               icon="mdi-truck-check-outline"
               size="small"
-              title="Stoktan teslim et"
+              :title="t('pages.requisitions.deliver')"
               variant="text"
               :loading="delivering"
               @click="fulfillRequest(item)"

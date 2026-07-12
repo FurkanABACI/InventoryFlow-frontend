@@ -1,7 +1,9 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { userService } from "../services/userService";
 
+const { t } = useI18n();
 const users = ref([]);
 const loading = ref(false);
 const saving = ref(false);
@@ -30,14 +32,14 @@ const userForm = reactive({
   is_active: true,
 });
 
-const userHeaders = [
-  { title: "Kullanıcı", key: "full_name" },
-  { title: "Kullanıcı adı", key: "username" },
-  { title: "Rol", key: "role_label" },
-  { title: "Birim", key: "department_value" },
-  { title: "Durum", key: "status" },
-  { title: "İşlemler", key: "actions", sortable: false, align: "end" },
-];
+const userHeaders = computed(() => [
+  { title: t("pages.users.user"), key: "full_name" },
+  { title: t("pages.users.username"), key: "username" },
+  { title: t("pages.users.role"), key: "role_label" },
+  { title: t("pages.users.department"), key: "department_value" },
+  { title: t("pages.users.status"), key: "status" },
+  { title: t("pages.products.actions"), key: "actions", sortable: false, align: "end" },
+]);
 
 const roleOptions = [
   { title: "Birim Kullanıcısı", value: "department" },
@@ -53,13 +55,13 @@ const itemsPerPageOptions = [
 ];
 
 const rules = {
-  required: (value) => Boolean(String(value ?? "").trim()) || "Bu alan zorunludur.",
+  required: (value) => Boolean(String(value ?? "").trim()) || t("validation.required"),
   password: (value) =>
     editingUserId.value ||
     String(value ?? "").length >= 6 ||
-    "Şifre en az 6 karakter olmalıdır.",
+    t("validation.passwordMin"),
   email: (value) =>
-    !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value)) || "Geçerli bir e-posta yaz.",
+    !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value)) || t("validation.email"),
 };
 
 const tableUsers = computed(() => {
@@ -285,14 +287,14 @@ onMounted(() => {
     <v-card class="inventory-card overflow-hidden" elevation="0">
       <div class="inventory-section-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 class="font-bold text-slate-950">Kullanıcılar</h2>
+          <h2 class="font-bold text-slate-950">{{ t('pages.users.title') }}</h2>
           <p class="text-sm text-slate-500">
-            Personel hesaplarını, birimlerini ve uygulama rollerini yönet.
+            {{ t('pages.users.subtitle') }}
           </p>
         </div>
 
         <v-btn color="primary" prepend-icon="mdi-plus" variant="flat" @click="openUserDialog">
-          Yeni kullanıcı
+          {{ t('pages.users.newUser') }}
         </v-btn>
       </div>
 
@@ -300,12 +302,12 @@ onMounted(() => {
 
       <div class="grid gap-4 px-6 py-5 lg:grid-cols-[minmax(0,1fr)_210px] lg:items-start">
         <div>
-          <span class="inventory-field-label">Kullanıcı ara</span>
+          <span class="inventory-field-label">{{ t('pages.users.searchLabel') }}</span>
           <v-text-field
             v-model="search"
             class="inventory-field"
-            aria-label="Kullanıcı ara"
-            placeholder="Örn: yemekhane, idari işler, Ayşe"
+            :aria-label="t('pages.users.searchLabel')"
+            :placeholder="t('pages.users.searchPlaceholder')"
             prepend-inner-icon="mdi-magnify"
             variant="outlined"
             density="comfortable"
@@ -339,8 +341,8 @@ onMounted(() => {
         :page="userPage"
         hide-default-footer
         item-value="id"
-        loading-text="Kullanıcılar yükleniyor..."
-        no-data-text="Kayıtlı kullanıcı bulunamadı."
+        :loading-text="t('pages.users.loading')"
+        :no-data-text="t('pages.users.noData')"
       >
         <template #item.status="{ item }">
           <span

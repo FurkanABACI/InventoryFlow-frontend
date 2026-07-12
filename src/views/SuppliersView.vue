@@ -1,7 +1,9 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { catalogService } from "../services/catalogService";
 
+const { t } = useI18n();
 const suppliers = ref([]);
 const loading = ref(false);
 const creating = ref(false);
@@ -28,14 +30,14 @@ const supplierForm = reactive({
   note: "",
 });
 
-const supplierHeaders = [
-  { title: "Firma", key: "name" },
-  { title: "Alan", key: "sector" },
-  { title: "E-posta", key: "email" },
-  { title: "Telefon", key: "phone" },
-  { title: "Durum", key: "status" },
-  { title: "İşlemler", key: "actions", sortable: false, align: "end" },
-];
+const supplierHeaders = computed(() => [
+  { title: t("pages.suppliers.company"), key: "name" },
+  { title: t("pages.suppliers.sector"), key: "sector" },
+  { title: t("pages.suppliers.email"), key: "email" },
+  { title: t("pages.suppliers.phone"), key: "phone" },
+  { title: t("pages.suppliers.status"), key: "status" },
+  { title: t("pages.products.actions"), key: "actions", sortable: false, align: "end" },
+]);
 
 const itemsPerPageOptions = [
   { title: "10 kayıt", value: 10 },
@@ -45,9 +47,9 @@ const itemsPerPageOptions = [
 ];
 
 const rules = {
-  required: (value) => Boolean(String(value ?? "").trim()) || "Bu alan zorunludur.",
+  required: (value) => Boolean(String(value ?? "").trim()) || t("validation.required"),
   email: (value) =>
-    !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value)) || "Geçerli bir e-posta yaz.",
+    !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value)) || t("validation.email"),
 };
 
 function getCreatedTime(item) {
@@ -266,14 +268,14 @@ onMounted(() => {
     <v-card class="inventory-card overflow-hidden" elevation="0">
       <div class="inventory-section-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 class="font-bold text-slate-950">Tedarikçiler</h2>
+          <h2 class="font-bold text-slate-950">{{ t('pages.suppliers.title') }}</h2>
           <p class="text-sm text-slate-500">
-            İşletmenin anlaşmalı olduğu firmaları ve hizmet alanlarını takip et.
+            {{ t('pages.suppliers.subtitle') }}
           </p>
         </div>
 
         <v-btn color="primary" prepend-icon="mdi-plus" variant="flat" @click="openSupplierDialog">
-          Yeni tedarikçi
+          {{ t('pages.suppliers.newSupplier') }}
         </v-btn>
       </div>
 
@@ -283,12 +285,12 @@ onMounted(() => {
         class="grid gap-4 px-6 py-5 lg:grid-cols-[minmax(0,1fr)_210px] lg:items-start"
       >
         <div>
-          <span class="inventory-field-label">Tedarikçi ara</span>
+          <span class="inventory-field-label">{{ t('pages.suppliers.searchLabel') }}</span>
           <v-text-field
             v-model="search"
             class="inventory-field"
-            aria-label="Tedarikçi ara"
-            placeholder="Örn: A Temizlik, kırtasiye, telefon"
+            :aria-label="t('pages.suppliers.searchLabel')"
+            :placeholder="t('pages.suppliers.searchPlaceholder')"
             prepend-inner-icon="mdi-magnify"
             variant="outlined"
             density="comfortable"
@@ -327,8 +329,8 @@ onMounted(() => {
         :items-per-page="supplierItemsPerPage"
         hide-default-footer
         item-value="id"
-        loading-text="Tedarikçiler yükleniyor..."
-        no-data-text="Kayıtlı tedarikçi bulunamadı."
+        :loading-text="t('pages.suppliers.loading')"
+        :no-data-text="t('pages.suppliers.noData')"
       >
         <template #item.actions="{ item }">
           <div class="flex justify-end gap-1">

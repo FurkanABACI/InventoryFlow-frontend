@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 import { useProductsStore } from '../stores/products'
 import { receivingService } from '../services/receivingService'
 import { requisitionService } from '../services/requisitionService'
@@ -8,6 +9,7 @@ import { stockService } from '../services/stockService'
 
 const productsStore = useProductsStore()
 const { products, count, loading, totalStock } = storeToRefs(productsStore)
+const { locale, t } = useI18n()
 const receipts = ref([])
 const requests = ref([])
 const movements = ref([])
@@ -21,6 +23,10 @@ const lowStockCount = computed(() =>
 
 const pendingRequestCount = computed(() =>
   requests.value.filter((request) => request.status === 'pending').length,
+)
+
+const purchaseNeededCount = computed(() =>
+  requests.value.filter((request) => request.status === 'purchase_needed').length,
 )
 
 const recentProducts = computed(() =>
@@ -46,7 +52,7 @@ function formatDate(value) {
     return '-'
   }
 
-  return new Date(value).toLocaleDateString('tr-TR')
+  return new Date(value).toLocaleDateString(locale.value === 'tr' ? 'tr-TR' : 'en-US')
 }
 
 async function fetchDashboardData() {
@@ -75,46 +81,54 @@ onMounted(() => {
 
 <template>
   <section class="space-y-6">
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
       <article class="inventory-card p-6">
-        <p class="text-sm font-medium text-slate-500">Toplam ürün</p>
+        <p class="text-sm font-medium text-slate-500">{{ t('pages.dashboard.totalProducts') }}</p>
         <div class="mt-3 flex items-end justify-between">
           <p class="text-3xl font-bold text-slate-950">{{ count }}</p>
-          <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">Aktif liste</span>
+          <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{{ t('common.activeList') }}</span>
         </div>
       </article>
 
       <article class="inventory-card p-6">
-        <p class="text-sm font-medium text-slate-500">Toplam stok</p>
+        <p class="text-sm font-medium text-slate-500">{{ t('pages.dashboard.totalStock') }}</p>
         <div class="mt-3 flex items-end justify-between">
           <p class="text-3xl font-bold text-slate-950">{{ totalStock }}</p>
-          <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Depo</span>
+          <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{{ t('common.warehouse') }}</span>
         </div>
       </article>
 
       <article class="inventory-card p-6">
-        <p class="text-sm font-medium text-slate-500">Kritik stok</p>
+        <p class="text-sm font-medium text-slate-500">{{ t('pages.dashboard.lowStock') }}</p>
         <div class="mt-3 flex items-end justify-between">
           <p class="text-3xl font-bold text-slate-950">{{ lowStockCount }}</p>
           <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
-            {{ loading ? 'Kontrol ediliyor' : 'Takipte' }}
+            {{ loading ? t('common.checking') : t('common.tracking') }}
           </span>
         </div>
       </article>
 
       <article class="inventory-card p-6">
-        <p class="text-sm font-medium text-slate-500">Bekleyen talep</p>
+        <p class="text-sm font-medium text-slate-500">{{ t('pages.dashboard.pendingRequests') }}</p>
         <div class="mt-3 flex items-end justify-between">
           <p class="text-3xl font-bold text-slate-950">{{ pendingRequestCount }}</p>
-          <span class="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">Teslim</span>
+          <span class="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">{{ t('common.delivery') }}</span>
         </div>
       </article>
 
       <article class="inventory-card p-6">
-        <p class="text-sm font-medium text-slate-500">Mal kabul</p>
+        <p class="text-sm font-medium text-slate-500">{{ t('pages.dashboard.purchaseNeeded') }}</p>
+        <div class="mt-3 flex items-end justify-between">
+          <p class="text-3xl font-bold text-slate-950">{{ purchaseNeededCount }}</p>
+          <span class="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">{{ t('common.procurement') }}</span>
+        </div>
+      </article>
+
+      <article class="inventory-card p-6">
+        <p class="text-sm font-medium text-slate-500">{{ t('pages.dashboard.receiving') }}</p>
         <div class="mt-3 flex items-end justify-between">
           <p class="text-3xl font-bold text-slate-950">{{ receipts.length }}</p>
-          <span class="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">Giriş</span>
+          <span class="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">{{ t('common.inbound') }}</span>
         </div>
       </article>
     </div>
@@ -122,16 +136,16 @@ onMounted(() => {
     <div class="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
       <article class="inventory-card overflow-hidden">
         <div class="border-b border-slate-200 px-6 py-5">
-          <h2 class="font-bold text-slate-950">Son stok hareketleri</h2>
-          <p class="mt-1 text-sm text-slate-500">Giriş ve çıkışların son kayıtları.</p>
+          <h2 class="font-bold text-slate-950">{{ t('pages.dashboard.recentMovements') }}</h2>
+          <p class="mt-1 text-sm text-slate-500">{{ t('pages.dashboard.recentMovementsText') }}</p>
         </div>
 
         <div v-if="dashboardLoading" class="px-6 py-8 text-sm text-slate-500">
-          Hareketler yükleniyor...
+          {{ t('common.loadingMovements') }}
         </div>
 
         <div v-else-if="recentMovements.length === 0" class="px-6 py-8 text-sm text-slate-500">
-          Henüz stok hareketi yok.
+          {{ t('common.noMovements') }}
         </div>
 
         <div v-else class="divide-y divide-slate-100">
@@ -156,16 +170,16 @@ onMounted(() => {
 
       <article class="inventory-card overflow-hidden">
         <div class="border-b border-slate-200 px-6 py-5">
-          <h2 class="font-bold text-slate-950">Son mal kabuller</h2>
-          <p class="mt-1 text-sm text-slate-500">Depoya en son giren kayıtlar.</p>
+          <h2 class="font-bold text-slate-950">{{ t('pages.dashboard.recentReceipts') }}</h2>
+          <p class="mt-1 text-sm text-slate-500">{{ t('pages.dashboard.recentReceiptsText') }}</p>
         </div>
 
         <div v-if="dashboardLoading" class="px-6 py-8 text-sm text-slate-500">
-          Mal kabuller yükleniyor...
+          {{ t('common.loadingReceipts') }}
         </div>
 
         <div v-else-if="recentReceipts.length === 0" class="px-6 py-8 text-sm text-slate-500">
-          Henüz mal kabul kaydı yok.
+          {{ t('common.noReceipts') }}
         </div>
 
         <div v-else class="divide-y divide-slate-100">
@@ -176,7 +190,7 @@ onMounted(() => {
           >
             <p class="font-semibold text-slate-950">{{ receipt.supplier_name }}</p>
             <p class="mt-1 text-sm text-slate-500">
-              {{ receipt.document_no || 'Belge no yok' }} · {{ formatDate(receipt.received_at) }}
+              {{ receipt.document_no || t('common.noDocument') }} · {{ formatDate(receipt.received_at) }}
             </p>
           </div>
         </div>
