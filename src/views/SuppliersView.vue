@@ -39,12 +39,12 @@ const supplierHeaders = computed(() => [
   { title: t("pages.products.actions"), key: "actions", sortable: false, align: "end" },
 ]);
 
-const itemsPerPageOptions = [
-  { title: "10 kayıt", value: 10 },
-  { title: "25 kayıt", value: 25 },
-  { title: "50 kayıt", value: 50 },
-  { title: "Tüm kayıtlar", value: -1 },
-];
+const itemsPerPageOptions = computed(() => [
+  { title: t("common.records10"), value: 10 },
+  { title: t("common.records25"), value: 25 },
+  { title: t("common.records50"), value: 50 },
+  { title: t("common.allRecords"), value: -1 },
+]);
 
 const rules = {
   required: (value) => Boolean(String(value ?? "").trim()) || t("validation.required"),
@@ -65,7 +65,7 @@ const tableSuppliers = computed(() => {
       sector: supplier.sector || "-",
       email: supplier.email || "-",
       phone: supplier.phone || "-",
-      status: supplier.is_active === false ? "Pasif" : "Aktif",
+      status: supplier.is_active === false ? t("common.passive") : t("common.active"),
     }))
     .filter((supplier) => {
       if (!searchText) {
@@ -94,17 +94,17 @@ const supplierPaginationText = computed(() => {
   const total = tableSuppliers.value.length;
 
   if (total === 0) {
-    return "Gösterilecek kayıt yok.";
+    return t("common.noRecordsToShow");
   }
 
   if (supplierItemsPerPage.value === -1) {
-    return `${total} kaydın tamamı gösteriliyor.`;
+    return t("common.allRecordsShown", { total });
   }
 
   const start = (supplierPage.value - 1) * supplierItemsPerPage.value + 1;
   const end = Math.min(supplierPage.value * supplierItemsPerPage.value, total);
 
-  return `${total} kayıttan ${start}-${end} arası gösteriliyor.`;
+  return t("common.recordsRangeShown", { total, start, end });
 });
 
 watch([search, supplierItemsPerPage], () => {
@@ -200,7 +200,7 @@ async function submitSupplier() {
   const result = await supplierFormRef.value?.validate();
 
   if (!result?.valid) {
-    formError.value = "Firma adı ve e-posta alanlarını kontrol et.";
+    formError.value = t("pages.suppliers.formValidationError");
     return;
   }
 
@@ -301,7 +301,7 @@ onMounted(() => {
 
         <label class="inventory-native-field">
           <span class="inventory-native-label">
-            Gösterilecek kayıt
+            {{ t("common.recordsToShow") }}
           </span>
           <select
             v-model.number="supplierItemsPerPage"
@@ -335,20 +335,20 @@ onMounted(() => {
         <template #item.actions="{ item }">
           <div class="flex justify-end gap-1">
             <v-btn
-              aria-label="Tedarikçiyi düzenle"
+              :aria-label="t('common.edit')"
               class="inventory-row-action"
               icon="mdi-pencil"
               size="small"
-              title="Tedarikçiyi düzenle"
+              :title="t('common.edit')"
               variant="text"
               @click="openEditSupplierDialog(item)"
             />
             <v-btn
-              aria-label="Tedarikçiyi sil"
+              :aria-label="t('common.delete')"
               class="inventory-row-action inventory-row-action--danger"
               icon="mdi-delete-outline"
               size="small"
-              title="Tedarikçiyi sil"
+              :title="t('common.delete')"
               variant="text"
               @click="openDeleteSupplierDialog(item)"
             />
@@ -401,11 +401,11 @@ onMounted(() => {
     <v-dialog v-model="supplierDialog" max-width="720">
       <v-card class="inventory-card overflow-hidden" elevation="0">
         <v-card-title class="px-6 pt-6 text-lg font-bold text-slate-950">
-          {{ editingSupplierId ? "Tedarikçiyi düzenle" : "Yeni tedarikçi ekle" }}
+          {{ editingSupplierId ? t("pages.suppliers.editSupplierTitle") : t("pages.suppliers.createSupplierTitle") }}
         </v-card-title>
 
         <v-card-subtitle class="px-6 text-slate-500">
-          Anlaşma yapılan firmanın iletişim, adres ve hizmet bilgilerini kaydet.
+          {{ t("pages.suppliers.formSubtitle") }}
         </v-card-subtitle>
 
         <v-card-text class="px-6 pt-5">
@@ -416,13 +416,13 @@ onMounted(() => {
           <v-form ref="supplierFormRef" @submit.prevent="submitSupplier">
             <div class="grid gap-x-5 gap-y-5 sm:grid-cols-2">
               <div>
-                <span class="inventory-field-label">Firma adı</span>
+                <span class="inventory-field-label">{{ t("pages.suppliers.companyName") }}</span>
                 <v-text-field
                   v-model="supplierForm.name"
                   class="inventory-field"
-                  aria-label="Firma adı"
+                  :aria-label="t('pages.suppliers.companyName')"
                   placeholder="Örn: A Temizlik Hizmetleri"
-                  hint="Listede görünecek resmi veya anlaşmalı firma adı."
+                  :hint="t('pages.suppliers.companyNameHint')"
                   persistent-hint
                   variant="outlined"
                   density="comfortable"
@@ -431,13 +431,13 @@ onMounted(() => {
               </div>
 
               <div>
-                <span class="inventory-field-label">Hizmet alanı</span>
+                <span class="inventory-field-label">{{ t("pages.suppliers.serviceArea") }}</span>
                 <v-text-field
                   v-model="supplierForm.sector"
                   class="inventory-field"
-                  aria-label="Hizmet alanı"
+                  :aria-label="t('pages.suppliers.serviceArea')"
                   placeholder="Örn: Temizlik, kırtasiye"
-                  hint="Firmanın düzenli ürün sağladığı alan."
+                  :hint="t('pages.suppliers.serviceAreaHint')"
                   persistent-hint
                   variant="outlined"
                   density="comfortable"
@@ -445,11 +445,11 @@ onMounted(() => {
               </div>
 
               <div>
-                <span class="inventory-field-label">E-posta</span>
+                <span class="inventory-field-label">{{ t("common.email") }}</span>
                 <v-text-field
                   v-model="supplierForm.email"
                   class="inventory-field"
-                  aria-label="E-posta"
+                  :aria-label="t('common.email')"
                   placeholder="Örn: satis@atedarik.com"
                   variant="outlined"
                   density="comfortable"
@@ -458,11 +458,11 @@ onMounted(() => {
               </div>
 
               <div>
-                <span class="inventory-field-label">Telefon</span>
+                <span class="inventory-field-label">{{ t("common.phone") }}</span>
                 <v-text-field
                   v-model="supplierForm.phone"
                   class="inventory-field"
-                  aria-label="Telefon"
+                  :aria-label="t('common.phone')"
                   placeholder="Örn: 0212 000 00 00"
                   variant="outlined"
                   density="comfortable"
@@ -470,20 +470,20 @@ onMounted(() => {
               </div>
 
               <label class="inventory-native-field sm:col-span-2">
-                <span class="inventory-native-label">Adres</span>
+                <span class="inventory-native-label">{{ t("common.address") }}</span>
                 <textarea
                   v-model="supplierForm.address"
                   class="inventory-native-textarea"
-                  placeholder="Firmanın adresi veya teslimat notu"
+                  :placeholder="t('pages.suppliers.addressPlaceholder')"
                 />
               </label>
 
               <label class="inventory-native-field sm:col-span-2">
-                <span class="inventory-native-label">Not</span>
+                <span class="inventory-native-label">{{ t("common.note") }}</span>
                 <textarea
                   v-model="supplierForm.note"
                   class="inventory-native-textarea"
-                  placeholder="Örn: Haftalık temizlik ürünleri bu firmadan alınır."
+                  :placeholder="t('pages.suppliers.notePlaceholder')"
                 />
               </label>
             </div>
@@ -492,10 +492,10 @@ onMounted(() => {
 
         <v-card-actions class="gap-2 px-6 pb-6 pt-1">
           <v-btn variant="text" @click="closeSupplierDialog">
-            Vazgeç
+            {{ t("common.cancel") }}
           </v-btn>
           <v-btn color="primary" :loading="creating" variant="flat" @click="submitSupplier">
-            {{ editingSupplierId ? "Değişiklikleri kaydet" : "Tedarikçiyi kaydet" }}
+            {{ editingSupplierId ? t("pages.products.saveChanges") : t("pages.suppliers.saveSupplier") }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -504,7 +504,7 @@ onMounted(() => {
     <v-dialog v-model="deleteSupplierDialog" max-width="520">
       <v-card class="inventory-card overflow-hidden" elevation="0">
         <v-card-title class="px-6 pt-6 text-lg font-bold text-slate-950">
-          Tedarikçiyi listeden kaldır
+          {{ t("pages.suppliers.removeSupplierTitle") }}
         </v-card-title>
 
         <v-card-text class="px-6 pt-4 text-slate-600">
@@ -514,7 +514,7 @@ onMounted(() => {
 
         <v-card-actions class="gap-2 px-6 pb-6 pt-1">
           <v-btn variant="text" @click="closeDeleteSupplierDialog">
-            Vazgeç
+            {{ t("common.cancel") }}
           </v-btn>
           <v-btn
             color="error"
@@ -522,7 +522,7 @@ onMounted(() => {
             variant="flat"
             @click="deleteSupplier"
           >
-            Tedarikçiyi kaldır
+            {{ t("pages.suppliers.removeSupplier") }}
           </v-btn>
         </v-card-actions>
       </v-card>

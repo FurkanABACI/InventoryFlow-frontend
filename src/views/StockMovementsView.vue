@@ -19,12 +19,12 @@ const movementHeaders = computed(() => [
   { title: t("pages.stockMovements.date"), key: "createdDate" },
 ]);
 
-const itemsPerPageOptions = [
-  { title: "10 kayıt", value: 10 },
-  { title: "25 kayıt", value: 25 },
-  { title: "50 kayıt", value: 50 },
-  { title: "Tüm kayıtlar", value: -1 },
-];
+const itemsPerPageOptions = computed(() => [
+  { title: t("common.records10"), value: 10 },
+  { title: t("common.records25"), value: 25 },
+  { title: t("common.records50"), value: 50 },
+  { title: t("common.allRecords"), value: -1 },
+]);
 
 const tableMovements = computed(() =>
   movements.value
@@ -50,17 +50,17 @@ const movementPaginationText = computed(() => {
   const total = tableMovements.value.length;
 
   if (total === 0) {
-    return "Gösterilecek kayıt yok.";
+    return t("common.noRecordsToShow");
   }
 
   if (itemsPerPage.value === -1) {
-    return `${total} kaydın tamamı gösteriliyor.`;
+    return t("common.allRecordsShown", { total });
   }
 
   const start = (movementPage.value - 1) * itemsPerPage.value + 1;
   const end = Math.min(movementPage.value * itemsPerPage.value, total);
 
-  return `${total} kayıttan ${start}-${end} arası gösteriliyor.`;
+  return t("common.recordsRangeShown", { total, start, end });
 });
 
 function getTableItem(item) {
@@ -69,11 +69,11 @@ function getTableItem(item) {
 
 function getSourceText(movement) {
   if (movement.source_type === "goods_receipt") {
-    return `Mal kabul #${movement.source_id}`;
+    return t("common.sourceGoodsReceipt", { id: movement.source_id });
   }
 
   if (movement.source_type === "stock_request") {
-    return `Talep #${movement.source_id}`;
+    return t("common.sourceStockRequest", { id: movement.source_id });
   }
 
   return movement.source_type || "-";
@@ -95,7 +95,7 @@ async function fetchMovements() {
     const data = await stockService.movements();
     movements.value = data.results || data;
   } catch {
-    error.value = "Stok hareketleri yüklenemedi.";
+    error.value = t("pages.stockMovements.loading");
   } finally {
     loading.value = false;
   }
@@ -136,7 +136,7 @@ onMounted(() => {
 
       <div class="flex justify-end px-6 py-5">
         <label class="inventory-native-field w-full sm:w-[210px]">
-          <span class="inventory-native-label">Gösterilecek kayıt</span>
+          <span class="inventory-native-label">{{ t("common.recordsToShow") }}</span>
           <select v-model.number="itemsPerPage" class="inventory-native-select">
             <option
               v-for="option in itemsPerPageOptions"

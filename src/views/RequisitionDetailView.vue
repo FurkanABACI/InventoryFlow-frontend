@@ -134,6 +134,17 @@ function getStatusClass(status) {
   return "border-blue-200 bg-blue-50 text-blue-700";
 }
 
+function getStatusText(status, fallback) {
+  const statusMap = {
+    pending: "pages.requisitions.statusPending",
+    purchase_needed: "pages.requisitions.statusPurchaseNeeded",
+    fulfilled: "pages.requisitions.statusFulfilled",
+    cancelled: "pages.requisitions.statusCancelled",
+  };
+
+  return statusMap[status] ? t(statusMap[status]) : fallback;
+}
+
 function getStockClass(item) {
   if (!item.has_product_card) {
     return "border-slate-200 bg-slate-100 text-slate-600";
@@ -313,7 +324,7 @@ onMounted(() => {
                   class="inline-flex rounded-full border px-2.5 py-1 text-xs font-bold"
                   :class="getStatusClass(request.status)"
                 >
-                  {{ request.status_label }}
+                  {{ getStatusText(request.status, request.status_label) }}
                 </span>
               </div>
               <h3 class="text-lg font-bold text-slate-950">
@@ -628,19 +639,19 @@ onMounted(() => {
                     <span
                       class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-600"
                     >
-                      {{ product.category_name || "Kategori yok" }}
+                      {{ product.category_name || t("common.noCategory") }}
                     </span>
                     <span
                       class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-600"
                     >
-                      {{ product.supplier_name || "Tedarikçi yok" }}
+                      {{ product.supplier_name || t("common.noSupplier") }}
                     </span>
                   </span>
                 </span>
                 <span
                   class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700"
                 >
-                  stok {{ product.stock }}
+                  {{ t("common.stockLabel", { stock: product.stock }) }}
                 </span>
               </span>
             </button>

@@ -66,38 +66,6 @@ async function handleSubmit() {
     <section
       class="relative flex items-center overflow-hidden px-6 py-12 sm:px-10 lg:px-16"
     >
-      <div class="absolute inset-0 bg-slate-50" />
-      <div class="absolute right-6 top-6 flex flex-wrap justify-end gap-2">
-        <button
-          type="button"
-          class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-100"
-          :title="t('settings.language')"
-          @click="settingsStore.toggleLocale"
-        >
-          {{
-            settingsStore.locale === "tr"
-              ? t("settings.english")
-              : t("settings.turkish")
-          }}
-        </button>
-        <div
-          class="flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm"
-        >
-          <button
-            v-for="themeOption in ['light', 'dark', 'system']"
-            :key="themeOption"
-            type="button"
-            class="rounded-md px-2.5 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-100"
-            :class="{
-              'bg-blue-50 text-blue-700': settingsStore.theme === themeOption,
-            }"
-            :title="t('settings.theme')"
-            @click="settingsStore.setTheme(themeOption)"
-          >
-            {{ t(`settings.${themeOption}`) }}
-          </button>
-        </div>
-      </div>
       <div class="max-w-2xl">
         <p
           class="relative text-sm font-bold uppercase tracking-wide text-blue-600"

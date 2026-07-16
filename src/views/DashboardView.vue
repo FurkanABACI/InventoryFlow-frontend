@@ -82,55 +82,65 @@ onMounted(() => {
 <template>
   <section class="space-y-6">
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-      <article class="inventory-card p-6">
+      <RouterLink :to="{ name: 'products' }" class="inventory-card inventory-stat-card p-6">
         <p class="text-sm font-medium text-slate-500">{{ t('pages.dashboard.totalProducts') }}</p>
-        <div class="mt-3 flex items-end justify-between">
+        <div class="inventory-stat-row mt-3">
           <p class="text-3xl font-bold text-slate-950">{{ count }}</p>
-          <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{{ t('common.activeList') }}</span>
+          <span class="inventory-stat-badge rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+            {{ t('common.activeList') }}
+          </span>
         </div>
-      </article>
+      </RouterLink>
 
-      <article class="inventory-card p-6">
+      <RouterLink :to="{ name: 'products' }" class="inventory-card inventory-stat-card p-6">
         <p class="text-sm font-medium text-slate-500">{{ t('pages.dashboard.totalStock') }}</p>
-        <div class="mt-3 flex items-end justify-between">
+        <div class="inventory-stat-row mt-3">
           <p class="text-3xl font-bold text-slate-950">{{ totalStock }}</p>
-          <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{{ t('common.warehouse') }}</span>
+          <span class="inventory-stat-badge rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+            {{ t('common.warehouse') }}
+          </span>
         </div>
-      </article>
+      </RouterLink>
 
-      <article class="inventory-card p-6">
+      <RouterLink :to="{ name: 'low-stock' }" class="inventory-card inventory-stat-card p-6">
         <p class="text-sm font-medium text-slate-500">{{ t('pages.dashboard.lowStock') }}</p>
-        <div class="mt-3 flex items-end justify-between">
+        <div class="inventory-stat-row mt-3">
           <p class="text-3xl font-bold text-slate-950">{{ lowStockCount }}</p>
-          <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+          <span class="inventory-stat-badge rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
             {{ loading ? t('common.checking') : t('common.tracking') }}
           </span>
         </div>
-      </article>
+      </RouterLink>
 
-      <article class="inventory-card p-6">
+      <RouterLink :to="{ name: 'requisitions' }" class="inventory-card inventory-stat-card p-6">
         <p class="text-sm font-medium text-slate-500">{{ t('pages.dashboard.pendingRequests') }}</p>
-        <div class="mt-3 flex items-end justify-between">
+        <div class="inventory-stat-row mt-3">
           <p class="text-3xl font-bold text-slate-950">{{ pendingRequestCount }}</p>
-          <span class="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">{{ t('common.delivery') }}</span>
+          <span class="inventory-stat-badge rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
+            {{ t('common.delivery') }}
+          </span>
         </div>
-      </article>
+      </RouterLink>
 
-      <article class="inventory-card p-6">
+      <RouterLink :to="{ name: 'requisitions' }" class="inventory-card inventory-stat-card p-6">
         <p class="text-sm font-medium text-slate-500">{{ t('pages.dashboard.purchaseNeeded') }}</p>
-        <div class="mt-3 flex items-end justify-between">
+        <div class="inventory-stat-row mt-3">
           <p class="text-3xl font-bold text-slate-950">{{ purchaseNeededCount }}</p>
-          <span class="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">{{ t('common.procurement') }}</span>
+          <span class="inventory-stat-badge rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
+            {{ t('common.procurement') }}
+          </span>
         </div>
-      </article>
+      </RouterLink>
 
-      <article class="inventory-card p-6">
+      <RouterLink :to="{ name: 'receiving' }" class="inventory-card inventory-stat-card p-6">
         <p class="text-sm font-medium text-slate-500">{{ t('pages.dashboard.receiving') }}</p>
-        <div class="mt-3 flex items-end justify-between">
+        <div class="inventory-stat-row mt-3">
           <p class="text-3xl font-bold text-slate-950">{{ receipts.length }}</p>
-          <span class="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">{{ t('common.inbound') }}</span>
+          <span class="inventory-stat-badge rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
+            {{ t('common.inbound') }}
+          </span>
         </div>
-      </article>
+      </RouterLink>
     </div>
 
     <div class="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">

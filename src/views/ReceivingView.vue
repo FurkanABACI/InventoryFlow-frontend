@@ -57,12 +57,12 @@ const receiptHeaders = computed(() => [
   { title: t("pages.products.actions"), key: "actions", sortable: false, align: "end" },
 ]);
 
-const itemsPerPageOptions = [
-  { title: "10 kayıt", value: 10 },
-  { title: "25 kayıt", value: 25 },
-  { title: "50 kayıt", value: 50 },
-  { title: "Tüm kayıtlar", value: -1 },
-];
+const itemsPerPageOptions = computed(() => [
+  { title: t("common.records10"), value: 10 },
+  { title: t("common.records25"), value: 25 },
+  { title: t("common.records50"), value: 50 },
+  { title: t("common.allRecords"), value: -1 },
+]);
 
 const rules = {
   required: (value) => Boolean(String(value ?? "").trim()) || t("validation.required"),
@@ -117,17 +117,17 @@ const receiptPaginationText = computed(() => {
   const total = tableReceipts.value.length;
 
   if (total === 0) {
-    return "Gösterilecek kayıt yok.";
+    return t("common.noRecordsToShow");
   }
 
   if (receiptItemsPerPage.value === -1) {
-    return `${total} kaydın tamamı gösteriliyor.`;
+    return t("common.allRecordsShown", { total });
   }
 
   const start = (receiptPage.value - 1) * receiptItemsPerPage.value + 1;
   const end = Math.min(receiptPage.value * receiptItemsPerPage.value, total);
 
-  return `${total} kayıttan ${start}-${end} arası gösteriliyor.`;
+  return t("common.recordsRangeShown", { total, start, end });
 });
 
 const activeSuppliers = computed(() =>
@@ -214,7 +214,7 @@ function getErrorMessage(error) {
   const data = error.response?.data;
 
   if (!data) {
-    return "Mal kabul kaydedilirken bağlantı sorunu oluştu.";
+    return t("pages.receiving.saveError");
   }
 
   if (typeof data === "string") {
@@ -255,7 +255,7 @@ async function fetchPageData() {
     categories.value = categoryData.results || categoryData;
     products.value = productData.results || productData;
   } catch {
-    error.value = "Mal kabul verileri yüklenemedi.";
+    error.value = t("pages.receiving.loading");
   } finally {
     loading.value = false;
   }
@@ -292,7 +292,7 @@ async function submitQuickProduct() {
 
     await fetchPageData();
     receiptForm.receipt_items[quickProductTargetIndex.value].product = product.id;
-    successMessage.value = "Ürün kartı oluşturuldu ve mal kabul satırında seçildi.";
+    successMessage.value = t("pages.receiving.quickProductSuccess");
     successSnackbar.value = true;
     closeQuickProductDialog();
   } catch (error) {
@@ -331,7 +331,7 @@ async function submitReceipt() {
       })),
     });
     await fetchPageData();
-    successMessage.value = "Mal kabul kaydedildi. Ürün stokları güncellendi.";
+    successMessage.value = t("pages.receiving.saveSuccess");
     successSnackbar.value = true;
     closeReceiptDialog();
   } catch (error) {
@@ -394,7 +394,7 @@ onMounted(() => {
       <div class="flex justify-end px-6 py-5">
         <label class="inventory-native-field w-full sm:w-[210px]">
           <span class="inventory-native-label">
-            Gösterilecek kayıt
+            {{ t("common.recordsToShow") }}
           </span>
           <select
             v-model.number="receiptItemsPerPage"
@@ -485,11 +485,11 @@ onMounted(() => {
     <v-dialog v-model="receiptDialog" max-width="920">
       <v-card class="inventory-card overflow-hidden" elevation="0">
         <v-card-title class="px-6 pt-6 text-lg font-bold text-slate-950">
-          Yeni mal kabul kaydı
+          {{ t("pages.receiving.formTitle") }}
         </v-card-title>
 
         <v-card-subtitle class="px-6 text-slate-500">
-          Gelen ürünleri tedarikçisine göre seç; kayıt tamamlanınca stok otomatik artar.
+          {{ t("pages.receiving.formSubtitle") }}
         </v-card-subtitle>
 
         <v-card-text class="px-6 pt-5">
@@ -500,9 +500,9 @@ onMounted(() => {
           <v-form ref="receiptFormRef" @submit.prevent="submitReceipt">
             <div class="grid gap-x-5 gap-y-5 sm:grid-cols-2">
               <label class="inventory-native-field">
-                <span class="inventory-native-label">Tedarikçi</span>
+                <span class="inventory-native-label">{{ t("pages.receiving.supplier") }}</span>
                 <select v-model="receiptForm.supplier" class="inventory-native-select">
-                  <option value="" disabled>Tedarikçi seç</option>
+                  <option value="" disabled>{{ t("pages.receiving.selectSupplier") }}</option>
                   <option
                     v-for="supplier in activeSuppliers"
                     :key="supplier.id"
@@ -515,10 +515,10 @@ onMounted(() => {
                   v-if="triedSubmit && !receiptForm.supplier"
                   class="inventory-error-text"
                 >
-                  Tedarikçi seçilmelidir.
+                  {{ t("pages.receiving.supplierRequired") }}
                 </p>
                 <p v-else class="inventory-help-text">
-                  Tedarikçi ürünün geliş kaynağı olarak kaydedilir.
+                  {{ t("pages.receiving.supplierHelp") }}
                 </p>
               </label>
 
@@ -537,7 +537,7 @@ onMounted(() => {
               </div>
 
               <label class="inventory-native-field sm:col-span-2">
-                <span class="inventory-native-label">Not</span>
+                <span class="inventory-native-label">{{ t("common.note") }}</span>
                 <textarea
                   v-model="receiptForm.note"
                   class="inventory-native-textarea"
@@ -572,18 +572,18 @@ onMounted(() => {
               >
                 <label class="inventory-native-field">
                   <span class="mb-1.5 flex items-center justify-between gap-3">
-                    <span class="inventory-native-label mb-0">Ürün</span>
+                    <span class="inventory-native-label mb-0">{{ t("pages.receiving.product") }}</span>
                     <button
                       type="button"
                       class="inline-flex h-7 items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
-                      title="Yeni ürün kartı oluştur"
+                      :title="t('pages.products.createProductTitle')"
                       @click="openQuickProductDialog(index)"
                     >
-                      + Ürün ekle
+                      + {{ t("pages.receiving.addProduct") }}
                     </button>
                   </span>
                   <select v-model="item.product" class="inventory-native-select">
-                    <option value="" disabled>Ürün seç</option>
+                    <option value="" disabled>{{ t("pages.receiving.selectProduct") }}</option>
                     <option
                       v-for="product in selectableProducts"
                       :key="product.id"
@@ -602,7 +602,7 @@ onMounted(() => {
                     v-if="triedSubmit && !item.product"
                     class="inventory-error-text"
                   >
-                    Ürün seçilmelidir.
+                    {{ t("pages.receiving.productRequired") }}
                   </p>
                 </label>
 
@@ -624,11 +624,11 @@ onMounted(() => {
                 </div>
 
                 <div>
-                  <span class="inventory-field-label">Birim maliyet</span>
+                  <span class="inventory-field-label">{{ t("pages.receiving.unitCost") }}</span>
                   <v-text-field
                     v-model="item.unit_cost"
                     class="inventory-field"
-                    aria-label="Birim maliyet"
+                    :aria-label="t('pages.receiving.unitCost')"
                     placeholder="125.00"
                     prefix="₺"
                     type="number"
@@ -648,7 +648,7 @@ onMounted(() => {
                     variant="text"
                     @click="removeReceiptItem(index)"
                   >
-                    Sil
+                    {{ t("common.delete") }}
                   </v-btn>
                 </div>
               </div>
@@ -658,10 +658,10 @@ onMounted(() => {
 
         <v-card-actions class="gap-2 px-6 pb-6 pt-1">
           <v-btn variant="text" @click="closeReceiptDialog">
-            Vazgeç
+            {{ t("common.cancel") }}
           </v-btn>
           <v-btn color="primary" :loading="creating" variant="flat" @click="submitReceipt">
-            Mal kabulü kaydet
+            {{ t("pages.receiving.saveReceipt") }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -674,7 +674,7 @@ onMounted(() => {
         </v-card-title>
 
         <v-card-subtitle class="px-6 text-slate-500">
-          Bu ürün kartı stok girişi yapmaz; stok, mal kabulü kaydettiğinde miktar kadar artar.
+          {{ t("pages.receiving.quickProductSubtitle") }}
         </v-card-subtitle>
 
         <v-card-text class="px-6 pt-5">
@@ -690,13 +690,13 @@ onMounted(() => {
           <v-form ref="quickProductFormRef" @submit.prevent="submitQuickProduct">
             <div class="grid gap-x-5 gap-y-5 sm:grid-cols-2">
               <div>
-                <span class="inventory-field-label">Ürün adı</span>
+                <span class="inventory-field-label">{{ t("pages.products.productName") }}</span>
                 <v-text-field
                   v-model="quickProductForm.name"
                   class="inventory-field"
-                  aria-label="Ürün adı"
+                  :aria-label="t('pages.products.productName')"
                   placeholder="Örn: Ülker Çikolata"
-                  hint="Mal kabulde seçilecek açık ürün adı."
+                  :hint="t('pages.products.productNameHint')"
                   persistent-hint
                   variant="outlined"
                   density="comfortable"
@@ -720,12 +720,12 @@ onMounted(() => {
               </div>
 
               <label class="inventory-native-field">
-                <span class="inventory-native-label">Kategori</span>
+                <span class="inventory-native-label">{{ t("pages.products.category") }}</span>
                 <select
                   v-model="quickProductForm.category"
                   class="inventory-native-select"
                 >
-                  <option value="" disabled>Kategori seç</option>
+                  <option value="" disabled>{{ t("pages.products.selectCategory") }}</option>
                   <option
                     v-for="category in activeCategories"
                     :key="category.id"
@@ -735,7 +735,7 @@ onMounted(() => {
                   </option>
                 </select>
                 <p class="inventory-help-text">
-                  Ürünün listelerde doğru grupta görünmesi için kategori seç.
+                  {{ t("pages.products.categoryHelp") }}
                 </p>
               </label>
 
@@ -759,13 +759,13 @@ onMounted(() => {
               </div>
 
               <div class="sm:col-span-2">
-                <span class="inventory-field-label">Düşük stok eşiği</span>
+                <span class="inventory-field-label">{{ t("pages.products.lowStockThreshold") }}</span>
                 <v-text-field
                   v-model.number="quickProductForm.low_stock_threshold"
                   class="inventory-field"
-                  aria-label="Düşük stok eşiği"
+                  :aria-label="t('pages.products.lowStockThreshold')"
                   placeholder="Örn: 5"
-                  hint="Stok bu değere eşit veya altına inerse ürün kritik sayılır."
+                  :hint="t('pages.products.lowStockHint')"
                   persistent-hint
                   type="number"
                   min="0"
@@ -781,7 +781,7 @@ onMounted(() => {
 
         <v-card-actions class="gap-2 px-6 pb-6 pt-1">
           <v-btn variant="text" @click="closeQuickProductDialog">
-            Vazgeç
+            {{ t("common.cancel") }}
           </v-btn>
           <v-btn
             color="primary"
@@ -789,7 +789,7 @@ onMounted(() => {
             variant="flat"
             @click="submitQuickProduct"
           >
-            Ürün kartını oluştur
+            {{ t("pages.receiving.createProductCard") }}
           </v-btn>
         </v-card-actions>
       </v-card>

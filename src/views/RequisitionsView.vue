@@ -52,12 +52,12 @@ const requestHeaders = computed(() => [
   { title: t("pages.products.actions"), key: "actions", sortable: false, align: "end" },
 ]);
 
-const itemsPerPageOptions = [
-  { title: "10 kayıt", value: 10 },
-  { title: "25 kayıt", value: 25 },
-  { title: "50 kayıt", value: 50 },
-  { title: "Tüm kayıtlar", value: -1 },
-];
+const itemsPerPageOptions = computed(() => [
+  { title: t("common.records10"), value: 10 },
+  { title: t("common.records25"), value: 25 },
+  { title: t("common.records50"), value: 50 },
+  { title: t("common.allRecords"), value: -1 },
+]);
 
 const rules = {
   required: (value) =>
@@ -107,17 +107,17 @@ const requestPaginationText = computed(() => {
   const total = tableRequests.value.length;
 
   if (total === 0) {
-    return "Gösterilecek kayıt yok.";
+    return t("common.noRecordsToShow");
   }
 
   if (itemsPerPage.value === -1) {
-    return `${total} kaydın tamamı gösteriliyor.`;
+    return t("common.allRecordsShown", { total });
   }
 
   const start = (requestPage.value - 1) * itemsPerPage.value + 1;
   const end = Math.min(requestPage.value * itemsPerPage.value, total);
 
-  return `${total} kayıttan ${start}-${end} arası gösteriliyor.`;
+  return t("common.recordsRangeShown", { total, start, end });
 });
 
 function getTableItem(item) {
@@ -138,6 +138,17 @@ function getStatusClass(status) {
   }
 
   return "border-blue-200 bg-blue-50 text-blue-700";
+}
+
+function getStatusText(status, fallback) {
+  const statusMap = {
+    pending: "pages.requisitions.statusPending",
+    purchase_needed: "pages.requisitions.statusPurchaseNeeded",
+    fulfilled: "pages.requisitions.statusFulfilled",
+    cancelled: "pages.requisitions.statusCancelled",
+  };
+
+  return statusMap[status] ? t(statusMap[status]) : fallback;
 }
 
 function openRequestDetail(item) {
@@ -200,7 +211,7 @@ function getErrorMessage(error) {
   const data = error.response?.data;
 
   if (!data) {
-    return "Talep işlemi sırasında bağlantı sorunu oluştu.";
+    return t("pages.requisitions.connectionError");
   }
 
   if (data.detail) {
@@ -280,12 +291,12 @@ function goToRequestItems() {
   formError.value = "";
 
   if (!String(requestForm.department ?? "").trim()) {
-    formError.value = "Talebi açan birim seçilmelidir.";
+    formError.value = t("pages.requisitions.departmentRequired");
     return;
   }
 
   if (!String(requestForm.requester_name ?? "").trim()) {
-    formError.value = "Talebi ileten kişi yazılmalıdır.";
+    formError.value = t("pages.requisitions.requesterRequired");
     return;
   }
 
@@ -320,7 +331,7 @@ async function fetchPageData() {
     requests.value = requestData.results || requestData;
     products.value = productData;
   } catch {
-    error.value = "Talepler yüklenemedi.";
+    error.value = t("pages.requisitions.loading");
   } finally {
     loading.value = false;
   }
@@ -332,8 +343,7 @@ async function submitRequest() {
   const result = await requestFormRef.value?.validate();
 
   if (!result?.valid || !hasValidRequestItems()) {
-    formError.value =
-      "Birim, talep eden kişi, ürün bilgisi ve miktar alanlarını kontrol et.";
+    formError.value = t("pages.requisitions.formValidationError");
     return;
   }
 
@@ -361,7 +371,7 @@ async function submitRequest() {
       }),
     });
     await fetchPageData();
-    successMessage.value = "Talep oluşturuldu.";
+    successMessage.value = t("pages.requisitions.createSuccess");
     successSnackbar.value = true;
     closeRequestDialog();
   } catch (error) {
@@ -379,7 +389,7 @@ async function fulfillRequest(item) {
   try {
     await requisitionService.fulfill(request.id);
     await fetchPageData();
-    successMessage.value = "Talep teslim edildi. Stoklar güncellendi.";
+    successMessage.value = t("pages.requisitions.fulfillSuccess");
     successSnackbar.value = true;
   } catch (error) {
     await fetchPageData();
@@ -435,7 +445,7 @@ onMounted(() => {
 
       <div class="flex justify-end px-6 py-5">
         <label class="inventory-native-field w-full sm:w-[210px]">
-          <span class="inventory-native-label">Gösterilecek kayıt</span>
+          <span class="inventory-native-label">{{ t("common.recordsToShow") }}</span>
           <select v-model.number="itemsPerPage" class="inventory-native-select">
             <option
               v-for="option in itemsPerPageOptions"
@@ -467,7 +477,7 @@ onMounted(() => {
             class="inline-flex min-w-[118px] justify-center rounded-full border px-3 py-1.5 text-xs font-bold"
             :class="getStatusClass(getTableItem(item).status)"
           >
-            {{ getTableItem(item).status_label }}
+            {{ getStatusText(getTableItem(item).status, getTableItem(item).status_label) }}
           </span>
         </template>
 
@@ -506,10 +516,9 @@ onMounted(() => {
           <div class="inventory-empty-state">
             <div>
               <div class="inventory-empty-state__icon">T</div>
-              <p class="inventory-empty-state__title">Henüz talep yok</p>
+              <p class="inventory-empty-state__title">{{ t("pages.requisitions.emptyTitle") }}</p>
               <p class="inventory-empty-state__text">
-                Bir birim ürün istediğinde talep kaydı açarak teslim sürecini
-                takip edebilirsin.
+                {{ t("pages.requisitions.emptyText") }}
               </p>
               <v-btn
                 class="mt-4"
@@ -518,7 +527,7 @@ onMounted(() => {
                 variant="flat"
                 @click="openRequestDialog"
               >
-                İlk talebi oluştur
+                {{ t("pages.requisitions.createFirst") }}
               </v-btn>
             </div>
           </div>
@@ -552,12 +561,11 @@ onMounted(() => {
         elevation="0"
       >
         <v-card-title class="shrink-0 px-6 pt-6 text-lg font-bold text-slate-950">
-          Yeni ürün talebi
+          {{ t("pages.requisitions.formTitle") }}
         </v-card-title>
 
         <v-card-subtitle class="shrink-0 px-6 text-slate-500">
-          Birimin istediği ürünleri seç; stok varsa teslim aşamasında otomatik
-          düşülür.
+          {{ t("pages.requisitions.formSubtitle") }}
         </v-card-subtitle>
 
         <v-card-text class="min-h-0 flex-1 overflow-y-auto px-6 pt-5">
@@ -572,8 +580,8 @@ onMounted(() => {
               :class="requestStep === 1 ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-600'"
               @click="goToRequestInfo"
             >
-              <span class="block text-xs font-bold uppercase">1. Adım</span>
-              <span class="mt-1 block text-sm font-bold">Talep bilgileri</span>
+              <span class="block text-xs font-bold uppercase">{{ t("common.step", { number: 1 }) }}</span>
+              <span class="mt-1 block text-sm font-bold">{{ t("pages.requisitions.requestInfo") }}</span>
             </button>
             <button
               type="button"
@@ -581,8 +589,8 @@ onMounted(() => {
               :class="requestStep === 2 ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-600'"
               @click="goToRequestItems"
             >
-              <span class="block text-xs font-bold uppercase">2. Adım</span>
-              <span class="mt-1 block text-sm font-bold">Ürün kalemleri</span>
+              <span class="block text-xs font-bold uppercase">{{ t("common.step", { number: 2 }) }}</span>
+              <span class="mt-1 block text-sm font-bold">{{ t("pages.requisitions.itemLines") }}</span>
             </button>
           </div>
 
@@ -592,13 +600,13 @@ onMounted(() => {
               class="grid gap-x-5 gap-y-5 sm:grid-cols-2"
             >
               <div>
-                <span class="inventory-field-label">Birim</span>
+                <span class="inventory-field-label">{{ t("pages.requisitions.department") }}</span>
                 <v-text-field
                   v-model="requestForm.department"
                   class="inventory-field"
-                  aria-label="Birim"
-                  placeholder="Örn: Yazılım"
-                  hint="Talebi açan departman veya ekip."
+                  :aria-label="t('pages.requisitions.department')"
+                  :placeholder="t('pages.requisitions.departmentPlaceholder')"
+                  :hint="t('pages.requisitions.departmentHint')"
                   persistent-hint
                   variant="outlined"
                   density="comfortable"
@@ -608,13 +616,13 @@ onMounted(() => {
               </div>
 
               <div>
-                <span class="inventory-field-label">Talep eden</span>
+                <span class="inventory-field-label">{{ t("pages.requisitions.requester") }}</span>
                 <v-text-field
                   v-model="requestForm.requester_name"
                   class="inventory-field"
-                  aria-label="Talep eden"
-                  placeholder="Örn: Ayşe Demir"
-                  hint="Talebi ileten kişi veya sorumlu."
+                  :aria-label="t('pages.requisitions.requester')"
+                  :placeholder="t('pages.requisitions.requesterPlaceholder')"
+                  :hint="t('pages.requisitions.requesterHint')"
                   persistent-hint
                   variant="outlined"
                   density="comfortable"
@@ -623,11 +631,11 @@ onMounted(() => {
               </div>
 
               <label class="inventory-native-field sm:col-span-2">
-                <span class="inventory-native-label">Not</span>
+                <span class="inventory-native-label">{{ t("common.note") }}</span>
                 <textarea
                   v-model="requestForm.note"
                   class="inventory-native-textarea"
-                  placeholder="Örn: Yeni başlayan geliştiriciler için laptop talebi."
+                  :placeholder="t('pages.requisitions.notePlaceholder')"
                 />
               </label>
             </div>
@@ -635,9 +643,9 @@ onMounted(() => {
             <div v-if="requestStep === 2" class="space-y-3">
               <div class="flex items-center justify-between gap-3">
                 <div>
-                  <h3 class="font-bold text-slate-950">İstenen ürünler</h3>
+                  <h3 class="font-bold text-slate-950">{{ t("pages.requisitions.requestedItemsTitle") }}</h3>
                   <p class="text-sm text-slate-500">
-                    Aynı talep içinde birden fazla ürün istenebilir.
+                    {{ t("pages.requisitions.requestedItemsSubtitle") }}
                   </p>
                 </div>
 
@@ -647,7 +655,7 @@ onMounted(() => {
                   variant="tonal"
                   @click="addRequestItem"
                 >
-                  Kalem ekle
+                  {{ t("pages.requisitions.addLine") }}
                 </v-btn>
               </div>
 
@@ -659,7 +667,7 @@ onMounted(() => {
                 <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p class="mb-2 text-xs font-bold uppercase text-slate-500">
-                      Ürün tipi
+                      {{ t("pages.requisitions.itemType") }}
                     </p>
                     <div class="inline-flex w-full rounded-lg border border-slate-200 bg-slate-50 p-1 sm:w-auto">
                     <button
@@ -668,7 +676,7 @@ onMounted(() => {
                       :class="item.item_type === 'existing' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'"
                       @click="setRequestItemType(item, 'existing')"
                     >
-                      Mevcut ürün
+                      {{ t("pages.requisitions.existingProduct") }}
                     </button>
                     <button
                       type="button"
@@ -676,7 +684,7 @@ onMounted(() => {
                       :class="item.item_type === 'custom' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'"
                       @click="setRequestItemType(item, 'custom')"
                     >
-                      Ürün listede yok
+                      {{ t("pages.requisitions.customProduct") }}
                     </button>
                     </div>
                   </div>
@@ -689,7 +697,7 @@ onMounted(() => {
                     variant="text"
                     @click="removeRequestItem(index)"
                   >
-                    Sil
+                    {{ t("common.delete") }}
                   </v-btn>
                 </div>
 
@@ -709,13 +717,13 @@ onMounted(() => {
                               SKU: {{ getSelectedProduct(item).sku }}
                             </span>
                             <span class="rounded-md bg-white px-2.5 py-1 text-xs font-bold text-blue-700">
-                              Stok: {{ getSelectedProduct(item).stock }}
+                              {{ t("common.stockLabel", { stock: getSelectedProduct(item).stock }) }}
                             </span>
                             <span class="rounded-md bg-white px-2.5 py-1 text-xs font-bold text-blue-700">
-                              {{ getSelectedProduct(item).category_name || "Kategori yok" }}
+                              {{ getSelectedProduct(item).category_name || t("common.noCategory") }}
                             </span>
                             <span class="rounded-md bg-white px-2.5 py-1 text-xs font-bold text-blue-700">
-                              {{ getSelectedProduct(item).supplier_name || "Tedarikçi yok" }}
+                              {{ getSelectedProduct(item).supplier_name || t("common.noSupplier") }}
                             </span>
                           </div>
                         </div>
@@ -724,19 +732,19 @@ onMounted(() => {
                           class="inline-flex shrink-0 items-center justify-center rounded-md border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100 hover:text-blue-900"
                           @click="clearSelectedProduct(item)"
                         >
-                          Değiştir
+                          {{ t("common.change") }}
                         </button>
                       </div>
                     </div>
 
                     <div v-else>
-                      <span class="inventory-field-label">Ürün ara</span>
+                      <span class="inventory-field-label">{{ t("pages.requisitions.searchProduct") }}</span>
                       <v-text-field
                         v-model="item.product_search"
                         class="inventory-field"
-                        aria-label="Ürün ara"
+                        :aria-label="t('pages.requisitions.searchProduct')"
                         clearable
-                        placeholder="Ürün adı, SKU, kategori veya tedarikçi yaz"
+                        :placeholder="t('pages.requisitions.searchProductPlaceholder')"
                         prepend-inner-icon="mdi-magnify"
                         variant="outlined"
                         density="comfortable"
@@ -762,15 +770,15 @@ onMounted(() => {
                                   SKU: {{ product.sku }}
                                 </span>
                                 <span class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">
-                                  {{ product.category_name || "Kategori yok" }}
+                                  {{ product.category_name || t("common.noCategory") }}
                                 </span>
                                 <span class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">
-                                  {{ product.supplier_name || "Tedarikçi yok" }}
+                                  {{ product.supplier_name || t("common.noSupplier") }}
                                 </span>
                               </span>
                             </span>
                             <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
-                              stok {{ product.stock }}
+                              {{ t("common.stockLabel", { stock: product.stock }) }}
                             </span>
                           </span>
                         </button>
@@ -779,7 +787,7 @@ onMounted(() => {
                           v-if="getFilteredProducts(item).length === 0"
                           class="px-3 py-4 text-sm font-semibold text-slate-500"
                         >
-                          Aramaya uygun ürün bulunamadı.
+                          {{ t("pages.requisitions.searchNoResult") }}
                         </div>
                       </div>
                     </div>
@@ -788,18 +796,18 @@ onMounted(() => {
                       v-if="triedSubmit && !item.product"
                       class="inventory-error-text"
                     >
-                      Ürün seçilmelidir.
+                      {{ t("pages.requisitions.productRequired") }}
                     </p>
                   </div>
 
                   <div v-else class="grid gap-3 lg:grid-cols-2">
                     <div>
-                      <span class="inventory-field-label">Talep edilen ürün</span>
+                      <span class="inventory-field-label">{{ t("pages.requisitions.requestedProduct") }}</span>
                       <v-text-field
                         v-model="item.requested_product_name"
                         class="inventory-field"
-                        aria-label="Talep edilen ürün"
-                        placeholder="Örn: Porselen yemek tabağı"
+                        :aria-label="t('pages.requisitions.requestedProduct')"
+                        :placeholder="t('pages.requisitions.requestedProductPlaceholder')"
                         variant="outlined"
                         density="comfortable"
                         :rules="[rules.required]"
@@ -807,12 +815,12 @@ onMounted(() => {
                     </div>
 
                     <div>
-                      <span class="inventory-field-label">Açıklama</span>
+                      <span class="inventory-field-label">{{ t("common.description") }}</span>
                       <v-text-field
                         v-model="item.requested_product_note"
                         class="inventory-field"
-                        aria-label="Açıklama"
-                        placeholder="Örn: Yemekhane için dayanıklı model"
+                        :aria-label="t('common.description')"
+                        :placeholder="t('pages.requisitions.requestedProductNotePlaceholder')"
                         variant="outlined"
                         density="comfortable"
                         hide-details
@@ -821,11 +829,11 @@ onMounted(() => {
                   </div>
 
                   <div class="w-full sm:w-40">
-                    <span class="inventory-field-label">Miktar</span>
+                    <span class="inventory-field-label">{{ t("pages.requisitions.quantity") }}</span>
                     <v-text-field
                       v-model.number="item.quantity"
                       class="inventory-field"
-                      aria-label="Miktar"
+                      :aria-label="t('pages.requisitions.quantity')"
                       placeholder="5"
                       type="number"
                       min="1"
@@ -843,14 +851,14 @@ onMounted(() => {
         </v-card-text>
 
         <v-card-actions class="shrink-0 gap-2 border-t border-slate-200 bg-white px-6 py-4">
-          <v-btn variant="text" @click="closeRequestDialog"> Vazgeç </v-btn>
+          <v-btn variant="text" @click="closeRequestDialog">{{ t("common.cancel") }}</v-btn>
           <v-spacer />
           <v-btn
             v-if="requestStep === 2"
             variant="text"
             @click="goToRequestInfo"
           >
-            Geri
+            {{ t("common.back") }}
           </v-btn>
           <v-btn
             v-if="requestStep === 1"
@@ -858,7 +866,7 @@ onMounted(() => {
             variant="flat"
             @click="goToRequestItems"
           >
-            Ürünlere geç
+            {{ t("pages.requisitions.goToProducts") }}
           </v-btn>
           <v-btn
             v-else
@@ -867,7 +875,7 @@ onMounted(() => {
             variant="flat"
             @click="submitRequest"
           >
-            Talebi kaydet
+            {{ t("pages.requisitions.saveRequest") }}
           </v-btn>
         </v-card-actions>
       </v-card>

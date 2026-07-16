@@ -42,17 +42,24 @@ const userHeaders = computed(() => [
 ]);
 
 const roleOptions = [
-  { title: "Birim Kullanıcısı", value: "department" },
-  { title: "İdari İşler", value: "operations" },
-  { title: "Admin", value: "admin" },
+  { titleKey: "pages.users.roleDepartment", value: "department" },
+  { titleKey: "pages.users.roleOperations", value: "operations" },
+  { titleKey: "pages.users.roleAdmin", value: "admin" },
 ];
 
-const itemsPerPageOptions = [
-  { title: "10 kayıt", value: 10 },
-  { title: "25 kayıt", value: 25 },
-  { title: "50 kayıt", value: 50 },
-  { title: "Tüm kayıtlar", value: -1 },
-];
+const translatedRoleOptions = computed(() =>
+  roleOptions.map((role) => ({
+    title: t(role.titleKey),
+    value: role.value,
+  })),
+);
+
+const itemsPerPageOptions = computed(() => [
+  { title: t("common.records10"), value: 10 },
+  { title: t("common.records25"), value: 25 },
+  { title: t("common.records50"), value: 50 },
+  { title: t("common.allRecords"), value: -1 },
+]);
 
 const rules = {
   required: (value) => Boolean(String(value ?? "").trim()) || t("validation.required"),
@@ -72,7 +79,7 @@ const tableUsers = computed(() => {
       ...user,
       role_label: user.role_label || "-",
       department_value: user.department_value || "-",
-      status: user.is_active ? "Aktif" : "Pasif",
+      status: user.is_active ? t("common.active") : t("common.passive"),
     }))
     .filter((user) => {
       if (!searchText) {
@@ -101,17 +108,17 @@ const paginationText = computed(() => {
   const total = tableUsers.value.length;
 
   if (total === 0) {
-    return "Gösterilecek kullanıcı yok.";
+    return t("common.noUsersToShow");
   }
 
   if (itemsPerPage.value === -1) {
-    return `${total} kullanıcının tamamı gösteriliyor.`;
+    return t("common.allUsersShown", { total });
   }
 
   const start = (userPage.value - 1) * itemsPerPage.value + 1;
   const end = Math.min(userPage.value * itemsPerPage.value, total);
 
-  return `${total} kullanıcıdan ${start}-${end} arası gösteriliyor.`;
+  return t("common.usersRangeShown", { total, start, end });
 });
 
 watch([search, itemsPerPage], () => {
@@ -240,7 +247,7 @@ async function submitUser() {
       successMessage.value = "Kullanıcı bilgileri güncellendi.";
     } else {
       await userService.create(payload);
-      successMessage.value = "Yeni kullanıcı sisteme eklendi.";
+      successMessage.value = t("pages.users.createSuccess");
     }
 
     await fetchUsers();
@@ -317,7 +324,7 @@ onMounted(() => {
         </div>
 
         <label class="inventory-native-field">
-          <span class="inventory-native-label">Gösterilecek kayıt</span>
+          <span class="inventory-native-label">{{ t("common.recordsToShow") }}</span>
           <select v-model.number="itemsPerPage" class="inventory-native-select">
             <option
               v-for="option in itemsPerPageOptions"
@@ -356,20 +363,20 @@ onMounted(() => {
         <template #item.actions="{ item }">
           <div class="flex justify-end gap-1">
             <v-btn
-              aria-label="Kullanıcıyı düzenle"
+              :aria-label="t('common.edit')"
               class="inventory-row-action"
               icon="mdi-pencil"
               size="small"
-              title="Kullanıcıyı düzenle"
+              :title="t('common.edit')"
               variant="text"
               @click="openEditUserDialog(item)"
             />
             <v-btn
-              aria-label="Kullanıcıyı pasifleştir"
+              :aria-label="t('pages.users.deactivateUser')"
               class="inventory-row-action inventory-row-action--danger"
               icon="mdi-account-off-outline"
               size="small"
-              title="Kullanıcıyı pasifleştir"
+              :title="t('pages.users.deactivateUser')"
               variant="text"
               @click="openDeleteUserDialog(item)"
             />
@@ -401,11 +408,11 @@ onMounted(() => {
     <v-dialog v-model="userDialog" max-width="760">
       <v-card class="inventory-card overflow-hidden" elevation="0">
         <v-card-title class="px-6 pt-6 text-lg font-bold text-slate-950">
-          {{ editingUserId ? "Kullanıcıyı düzenle" : "Yeni kullanıcı ekle" }}
+          {{ editingUserId ? t("pages.users.editUserTitle") : t("pages.users.createUserTitle") }}
         </v-card-title>
 
         <v-card-subtitle class="px-6 text-slate-500">
-          Kullanıcının giriş bilgilerini, birimini ve uygulama rolünü belirle.
+          {{ t("pages.users.formSubtitle") }}
         </v-card-subtitle>
 
         <v-card-text class="px-6 pt-5">
@@ -416,11 +423,11 @@ onMounted(() => {
           <v-form ref="userFormRef" @submit.prevent="submitUser">
             <div class="grid gap-x-5 gap-y-5 sm:grid-cols-2">
               <div>
-                <span class="inventory-field-label">Kullanıcı adı</span>
+                <span class="inventory-field-label">{{ t("pages.users.username") }}</span>
                 <v-text-field
                   v-model="userForm.username"
                   class="inventory-field"
-                  aria-label="Kullanıcı adı"
+                  :aria-label="t('pages.users.username')"
                   placeholder="Örn: yemekhane"
                   variant="outlined"
                   density="comfortable"
@@ -429,12 +436,12 @@ onMounted(() => {
               </div>
 
               <div>
-                <span class="inventory-field-label">Şifre</span>
+                <span class="inventory-field-label">{{ t("auth.password") }}</span>
                 <v-text-field
                   v-model="userForm.password"
                   class="inventory-field"
-                  aria-label="Şifre"
-                  :placeholder="editingUserId ? 'Değişmeyecekse boş bırak' : 'En az 6 karakter'"
+                  :aria-label="t('auth.password')"
+                  :placeholder="editingUserId ? t('pages.users.passwordKeepPlaceholder') : t('pages.users.passwordNewPlaceholder')"
                   type="password"
                   variant="outlined"
                   density="comfortable"
@@ -443,11 +450,11 @@ onMounted(() => {
               </div>
 
               <div>
-                <span class="inventory-field-label">Ad</span>
+                <span class="inventory-field-label">{{ t("pages.users.firstName") }}</span>
                 <v-text-field
                   v-model="userForm.first_name"
                   class="inventory-field"
-                  aria-label="Ad"
+                  :aria-label="t('pages.users.firstName')"
                   placeholder="Örn: Ayşe"
                   variant="outlined"
                   density="comfortable"
@@ -455,11 +462,11 @@ onMounted(() => {
               </div>
 
               <div>
-                <span class="inventory-field-label">Soyad</span>
+                <span class="inventory-field-label">{{ t("pages.users.lastName") }}</span>
                 <v-text-field
                   v-model="userForm.last_name"
                   class="inventory-field"
-                  aria-label="Soyad"
+                  :aria-label="t('pages.users.lastName')"
                   placeholder="Örn: Demir"
                   variant="outlined"
                   density="comfortable"
@@ -467,11 +474,11 @@ onMounted(() => {
               </div>
 
               <div>
-                <span class="inventory-field-label">E-posta</span>
+                <span class="inventory-field-label">{{ t("common.email") }}</span>
                 <v-text-field
                   v-model="userForm.email"
                   class="inventory-field"
-                  aria-label="E-posta"
+                  :aria-label="t('common.email')"
                   placeholder="Örn: ayse@firma.com"
                   variant="outlined"
                   density="comfortable"
@@ -480,10 +487,10 @@ onMounted(() => {
               </div>
 
               <label class="inventory-native-field">
-                <span class="inventory-native-label">Rol</span>
+                <span class="inventory-native-label">{{ t("pages.users.role") }}</span>
                 <select v-model="userForm.role" class="inventory-native-select">
                   <option
-                    v-for="role in roleOptions"
+                    v-for="role in translatedRoleOptions"
                     :key="role.value"
                     :value="role.value"
                   >
@@ -493,11 +500,11 @@ onMounted(() => {
               </label>
 
               <div>
-                <span class="inventory-field-label">Birim</span>
+                <span class="inventory-field-label">{{ t("pages.users.department") }}</span>
                 <v-text-field
                   v-model="userForm.department"
                   class="inventory-field"
-                  aria-label="Birim"
+                  :aria-label="t('pages.users.department')"
                   placeholder="Örn: Yemekhane, Yazılım"
                   variant="outlined"
                   density="comfortable"
@@ -507,7 +514,7 @@ onMounted(() => {
               <v-checkbox
                 v-model="userForm.is_active"
                 color="primary"
-                label="Kullanıcı aktif"
+                :label="t('pages.users.activeUser')"
                 hide-details
               />
             </div>
@@ -516,10 +523,10 @@ onMounted(() => {
 
         <v-card-actions class="gap-2 px-6 pb-6 pt-1">
           <v-btn variant="text" @click="closeUserDialog">
-            Vazgeç
+            {{ t("common.cancel") }}
           </v-btn>
           <v-btn color="primary" :loading="saving" variant="flat" @click="submitUser">
-            {{ editingUserId ? "Değişiklikleri kaydet" : "Kullanıcıyı kaydet" }}
+            {{ editingUserId ? t("pages.products.saveChanges") : t("pages.users.saveUser") }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -528,7 +535,7 @@ onMounted(() => {
     <v-dialog v-model="deleteUserDialog" max-width="520">
       <v-card class="inventory-card overflow-hidden" elevation="0">
         <v-card-title class="px-6 pt-6 text-lg font-bold text-slate-950">
-          Kullanıcıyı pasifleştir
+          {{ t("pages.users.deactivateUserTitle") }}
         </v-card-title>
 
         <v-card-text class="px-6 pt-4 text-slate-600">
@@ -538,10 +545,10 @@ onMounted(() => {
 
         <v-card-actions class="gap-2 px-6 pb-6 pt-1">
           <v-btn variant="text" @click="closeDeleteUserDialog">
-            Vazgeç
+            {{ t("common.cancel") }}
           </v-btn>
           <v-btn color="error" :loading="deletingUser" variant="flat" @click="deactivateUser">
-            Kullanıcıyı pasifleştir
+            {{ t("pages.users.deactivateUser") }}
           </v-btn>
         </v-card-actions>
       </v-card>
