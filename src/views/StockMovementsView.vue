@@ -12,7 +12,7 @@ const movementPage = ref(1);
 
 const movementHeaders = computed(() => [
   { title: t("pages.stockMovements.product"), key: "product_name" },
-  { title: "SKU", key: "sku" },
+  { title: t("pages.products.productCode"), key: "sku" },
   { title: t("pages.stockMovements.type"), key: "movement_type" },
   { title: t("pages.stockMovements.quantity"), key: "quantity" },
   { title: t("pages.stockMovements.source"), key: "source" },

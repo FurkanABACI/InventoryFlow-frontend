@@ -37,7 +37,6 @@ const productForm = reactive({
   sku: "",
   category: "",
   supplier: "",
-  price: "",
   low_stock_threshold: 5,
 });
 
@@ -55,11 +54,10 @@ const quickCategoryForm = reactive({
 
 const productHeaders = computed(() => [
   { title: t("pages.products.product"), key: "name" },
-  { title: "SKU", key: "sku" },
+  { title: t("pages.products.productCode"), key: "sku" },
   { title: t("pages.products.category"), key: "categoryName" },
   { title: t("pages.products.supplier"), key: "supplierName" },
   { title: t("pages.products.stock"), key: "stock" },
-  { title: t("pages.products.price"), key: "price" },
   { title: t("pages.products.actions"), key: "actions", sortable: false, align: "end" },
 ]);
 
@@ -78,8 +76,6 @@ const rules = {
   required: (value) => Boolean(String(value ?? "").trim()) || t("validation.required"),
   sku: (value) =>
     !String(value ?? "").includes(" ") || t("validation.skuNoSpace"),
-  positivePrice: (value) =>
-    Number(value) > 0 || t("validation.positivePrice"),
   nonNegativeNumber: (value) =>
     Number(value) >= 0 || t("validation.nonNegative"),
   wholeNumber: (value) =>
@@ -224,7 +220,6 @@ function resetProductForm() {
   productForm.sku = "";
   productForm.category = "";
   productForm.supplier = "";
-  productForm.price = "";
   productForm.low_stock_threshold = 5;
   formError.value = "";
   triedSubmit.value = false;
@@ -245,7 +240,6 @@ function openEditProductDialog(item) {
   productForm.sku = product.sku || "";
   productForm.category = product.category?.id || product.category || "";
   productForm.supplier = product.supplier?.id || product.supplier || "";
-  productForm.price = product.price || "";
   productForm.low_stock_threshold = product.low_stock_threshold ?? 5;
   productDialog.value = true;
 }
@@ -312,11 +306,21 @@ function getErrorMessage(error) {
     return data;
   }
 
+  const fieldLabels = {
+    name: t("pages.products.productName"),
+    sku: t("pages.products.productCode"),
+    category: t("pages.products.category"),
+    supplier: t("pages.products.supplier"),
+    price: t("pages.products.internalPrice"),
+    stock: t("pages.products.stock"),
+    low_stock_threshold: t("pages.products.lowStockThreshold"),
+    non_field_errors: t("common.error"),
+  };
   const firstKey = Object.keys(data)[0];
   const firstValue = data[firstKey];
   const message = Array.isArray(firstValue) ? firstValue[0] : firstValue;
 
-  return `${firstKey}: ${message}`;
+  return `${fieldLabels[firstKey] || firstKey}: ${message}`;
 }
 
 async function fetchCatalogData() {
@@ -401,7 +405,7 @@ async function submitProduct() {
   const result = await productFormRef.value?.validate();
 
   if (!result?.valid || !productForm.category || !productForm.supplier) {
-    formError.value = "Ürün adı, SKU, kategori, tedarikçi ve satış/list fiyatını eksiksiz doldur.";
+    formError.value = t("pages.products.formValidationError");
     return;
   }
 
@@ -410,7 +414,7 @@ async function submitProduct() {
     sku: productForm.sku.trim().toUpperCase(),
     category: Number(productForm.category),
     supplier: Number(productForm.supplier),
-    price: productForm.price,
+    price: "1.00",
     stock: 0,
     low_stock_threshold: Number(productForm.low_stock_threshold),
   };
@@ -649,12 +653,12 @@ onMounted(() => {
               </div>
 
               <div>
-                <span class="inventory-field-label">SKU</span>
+                <span class="inventory-field-label">{{ t("pages.products.productCode") }}</span>
                 <v-text-field
                   v-model="productForm.sku"
                   class="inventory-field"
-                  aria-label="SKU"
-                  placeholder="Örn: KEY-001"
+                  :aria-label="t('pages.products.productCode')"
+                  :placeholder="t('pages.products.productCodePlaceholder')"
                   :hint="t('pages.products.skuHint')"
                   persistent-hint
                   variant="outlined"
@@ -738,25 +742,6 @@ onMounted(() => {
                   {{ t("pages.products.supplierHelp") }}
                 </p>
               </label>
-
-              <div>
-                <span class="inventory-field-label">{{ t("pages.products.salePrice") }}</span>
-                <v-text-field
-                  v-model="productForm.price"
-                  class="inventory-field"
-                  :aria-label="t('pages.products.salePrice')"
-                  placeholder="Örn: 1250.00"
-                  :hint="t('pages.products.salePriceHint')"
-                  persistent-hint
-                  prefix="₺"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  variant="outlined"
-                  density="comfortable"
-                  :rules="[rules.required, rules.positivePrice]"
-                />
-              </div>
 
               <div>
                 <span class="inventory-field-label">{{ t("pages.products.lowStockThreshold") }}</span>

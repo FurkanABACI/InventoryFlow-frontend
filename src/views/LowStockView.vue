@@ -49,7 +49,7 @@ onMounted(() => {
         >
           <div>
             <p class="font-semibold text-slate-950">{{ product.name }}</p>
-            <p class="text-sm text-slate-500">SKU: {{ product.sku }}</p>
+            <p class="text-sm text-slate-500">{{ t("pages.products.productCode") }}: {{ product.sku || t("pages.products.noProductCode") }}</p>
           </div>
 
           <v-chip color="warning" variant="tonal">

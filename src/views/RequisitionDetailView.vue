@@ -157,6 +157,16 @@ function getStockClass(item) {
   return "border-emerald-200 bg-emerald-50 text-emerald-700";
 }
 
+function getProductTitle(product) {
+  if (!product) {
+    return "";
+  }
+
+  return product.sku
+    ? `${product.name} - ${product.sku}`
+    : product.name;
+}
+
 function getErrorMessage(error) {
   const data = error.response?.data;
 
@@ -216,7 +226,7 @@ function closeLinkDialog() {
 
 function chooseProduct(product) {
   selectedProduct.value = product.id;
-  productSearch.value = `${product.name} - ${product.sku}`;
+  productSearch.value = getProductTitle(product);
 }
 
 async function linkItemProduct() {
@@ -428,7 +438,7 @@ onMounted(() => {
                     <span
                       class="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600"
                     >
-                      {{ item.sku }}
+                      {{ item.sku || t('pages.products.noProductCode') }}
                     </span>
                   </div>
                   <p class="mt-2 text-sm text-slate-500">
@@ -528,7 +538,7 @@ onMounted(() => {
             />
           </article>
 
-          <article class="inventory-card p-4">
+          <article v-if="canManageInventory" class="inventory-card p-4">
             <p class="text-xs font-semibold text-slate-500">
               {{ t('pages.requisitions.stockReview') }}
             </p>
@@ -634,7 +644,7 @@ onMounted(() => {
                     <span
                       class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-600"
                     >
-                      SKU: {{ product.sku }}
+                      {{ t("pages.products.productCode") }}: {{ product.sku || t("pages.products.noProductCode") }}
                     </span>
                     <span
                       class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-600"

@@ -714,7 +714,7 @@ onMounted(() => {
                           </p>
                           <div class="mt-2 flex flex-wrap gap-2">
                             <span class="rounded-md bg-white px-2.5 py-1 text-xs font-bold text-blue-700">
-                              SKU: {{ getSelectedProduct(item).sku }}
+                              {{ t("pages.products.productCode") }}: {{ getSelectedProduct(item).sku || t("pages.products.noProductCode") }}
                             </span>
                             <span class="rounded-md bg-white px-2.5 py-1 text-xs font-bold text-blue-700">
                               {{ t("common.stockLabel", { stock: getSelectedProduct(item).stock }) }}
@@ -767,7 +767,7 @@ onMounted(() => {
                               </span>
                               <span class="mt-1 flex flex-wrap gap-1.5">
                                 <span class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">
-                                  SKU: {{ product.sku }}
+                                  {{ t("pages.products.productCode") }}: {{ product.sku || t("pages.products.noProductCode") }}
                                 </span>
                                 <span class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">
                                   {{ product.category_name || t("common.noCategory") }}

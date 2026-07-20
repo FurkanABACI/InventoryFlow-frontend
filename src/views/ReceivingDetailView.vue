@@ -132,7 +132,7 @@ onMounted(() => {
             <thead class="bg-slate-50 text-left text-xs font-bold uppercase text-slate-500">
               <tr>
                 <th class="px-6 py-4">{{ t('pages.products.product') }}</th>
-                <th class="px-6 py-4">SKU</th>
+                <th class="px-6 py-4">{{ t("pages.products.productCode") }}</th>
                 <th class="px-6 py-4 text-right">{{ t('pages.stockMovements.quantity') }}</th>
                 <th class="px-6 py-4 text-right">{{ t('pages.receiving.unitCost') }}</th>
                 <th class="px-6 py-4 text-right">{{ t('pages.receiving.rowTotal') }}</th>

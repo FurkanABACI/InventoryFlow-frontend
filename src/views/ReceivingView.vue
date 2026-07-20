@@ -26,6 +26,7 @@ const triedSubmit = ref(false);
 const quickProductTargetIndex = ref(0);
 const receiptItemsPerPage = ref(10);
 const receiptPage = ref(1);
+const supplierSearch = ref("");
 
 const receiptForm = reactive({
   supplier: "",
@@ -34,6 +35,7 @@ const receiptForm = reactive({
   receipt_items: [
     {
       product: "",
+      product_search: "",
       quantity: 1,
       unit_cost: "",
     },
@@ -44,7 +46,6 @@ const quickProductForm = reactive({
   name: "",
   sku: "",
   category: "",
-  price: "",
   low_stock_threshold: 5,
 });
 
@@ -68,8 +69,6 @@ const rules = {
   required: (value) => Boolean(String(value ?? "").trim()) || t("validation.required"),
   sku: (value) =>
     !String(value ?? "").includes(" ") || t("validation.skuNoSpace"),
-  positivePrice: (value) =>
-    Number(value) > 0 || t("validation.positivePrice"),
   nonNegativeMoney: (value) =>
     Number(value) >= 0 || t("validation.nonNegativeCost"),
   nonNegativeNumber: (value) =>
@@ -134,6 +133,22 @@ const activeSuppliers = computed(() =>
   suppliers.value.filter((supplier) => supplier.is_active !== false),
 );
 
+const filteredSuppliers = computed(() => {
+  const searchText = supplierSearch.value.trim().toLowerCase();
+
+  if (!searchText) {
+    return activeSuppliers.value.slice(0, 6);
+  }
+
+  return activeSuppliers.value
+    .filter((supplier) =>
+      [supplier.name, supplier.sector, supplier.email, supplier.phone].some((field) =>
+        String(field || "").toLowerCase().includes(searchText),
+      ),
+    )
+    .slice(0, 6);
+});
+
 const activeCategories = computed(() =>
   categories.value.filter((category) => category.is_active !== false),
 );
@@ -144,11 +159,13 @@ const selectableProducts = computed(() =>
 
 function resetReceiptForm() {
   receiptForm.supplier = "";
+  supplierSearch.value = "";
   receiptForm.document_no = "";
   receiptForm.note = "";
   receiptForm.receipt_items = [
     {
       product: "",
+      product_search: "",
       quantity: 1,
       unit_cost: "",
     },
@@ -172,7 +189,6 @@ function resetQuickProductForm() {
   quickProductForm.name = "";
   quickProductForm.sku = "";
   quickProductForm.category = "";
-  quickProductForm.price = "";
   quickProductForm.low_stock_threshold = 5;
   quickProductError.value = "";
   quickProductFormRef.value?.resetValidation();
@@ -197,6 +213,7 @@ function closeQuickProductDialog() {
 function addReceiptItem() {
   receiptForm.receipt_items.push({
     product: "",
+    product_search: "",
     quantity: 1,
     unit_cost: "",
   });
@@ -210,6 +227,60 @@ function removeReceiptItem(index) {
   receiptForm.receipt_items.splice(index, 1);
 }
 
+function getProductTitle(product) {
+  if (!product) {
+    return "";
+  }
+
+  return product.sku
+    ? `${product.name} - ${product.sku}`
+    : product.name;
+}
+
+function getSelectedReceiptProduct(item) {
+  return selectableProducts.value.find(
+    (product) => Number(product.id) === Number(item.product),
+  );
+}
+
+function getFilteredReceiptProducts(item) {
+  const searchText = String(item.product_search || "").trim().toLowerCase();
+
+  if (!searchText) {
+    return selectableProducts.value.slice(0, 6);
+  }
+
+  return selectableProducts.value
+    .filter((product) =>
+      [product.name, product.sku, product.category_name, product.supplier_name].some((field) =>
+        String(field || "").toLowerCase().includes(searchText),
+      ),
+    )
+    .slice(0, 6);
+}
+
+function selectReceiptProduct(item, product) {
+  item.product = product.id;
+  item.product_search = getProductTitle(product);
+}
+
+function clearReceiptProduct(item) {
+  item.product = "";
+  item.product_search = "";
+}
+
+function selectReceiptSupplier(supplier) {
+  receiptForm.supplier = supplier.id;
+  supplierSearch.value = supplier.sector
+    ? `${supplier.name} - ${supplier.sector}`
+    : supplier.name;
+}
+
+function clearReceiptSupplier() {
+  receiptForm.supplier = "";
+  supplierSearch.value = "";
+}
+
 function getErrorMessage(error) {
   const data = error.response?.data;
 
@@ -221,11 +292,23 @@ function getErrorMessage(error) {
     return data;
   }
 
+  const fieldLabels = {
+    supplier: t("pages.receiving.supplier"),
+    receipt_items: t("pages.receiving.incomingProducts"),
+    product: t("pages.receiving.product"),
+    quantity: t("pages.receiving.quantity"),
+    unit_cost: t("pages.receiving.unitCost"),
+    price: t("pages.products.internalPrice"),
+    sku: t("pages.products.productCode"),
+    category: t("pages.products.category"),
+    low_stock_threshold: t("pages.products.lowStockThreshold"),
+    non_field_errors: t("common.error"),
+  };
   const firstKey = Object.keys(data)[0];
   const firstValue = data[firstKey];
   const message = Array.isArray(firstValue) ? firstValue[0] : firstValue;
 
-  return `${firstKey}: ${message}`;
+  return `${fieldLabels[firstKey] || firstKey}: ${message}`;
 }
 
 function hasValidReceiptItems() {
@@ -272,7 +355,7 @@ async function submitQuickProduct() {
   }
 
   if (!result?.valid || !quickProductForm.category) {
-    quickProductError.value = "Ürün adı, SKU, kategori ve satış/list fiyatını kontrol et.";
+    quickProductError.value = t("pages.receiving.quickProductValidationError");
     return;
   }
 
@@ -285,7 +368,7 @@ async function submitQuickProduct() {
       category: Number(quickProductForm.category),
       supplier: supplierId,
       supplier_ids: [supplierId],
-      price: quickProductForm.price,
+      price: "1.00",
       stock: 0,
       low_stock_threshold: Number(quickProductForm.low_stock_threshold),
     });
@@ -499,18 +582,44 @@ onMounted(() => {
 
           <v-form ref="receiptFormRef" @submit.prevent="submitReceipt">
             <div class="grid gap-x-5 gap-y-5 sm:grid-cols-2">
-              <label class="inventory-native-field">
-                <span class="inventory-native-label">{{ t("pages.receiving.supplier") }}</span>
-                <select v-model="receiptForm.supplier" class="inventory-native-select">
-                  <option value="" disabled>{{ t("pages.receiving.selectSupplier") }}</option>
-                  <option
-                    v-for="supplier in activeSuppliers"
+              <div>
+                <span class="inventory-field-label">{{ t("pages.receiving.supplierSearch") }}</span>
+                <v-text-field
+                  v-model="supplierSearch"
+                  class="inventory-field"
+                  :aria-label="t('pages.receiving.supplierSearch')"
+                  clearable
+                  :placeholder="t('pages.receiving.supplierSearchPlaceholder')"
+                  prepend-inner-icon="mdi-magnify"
+                  variant="outlined"
+                  density="comfortable"
+                  hide-details
+                  @click:clear="clearReceiptSupplier"
+                />
+
+                <div class="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                  <button
+                    v-for="supplier in filteredSuppliers"
                     :key="supplier.id"
-                    :value="supplier.id"
+                    type="button"
+                    class="w-full border-b border-slate-200 px-3 py-3 text-left last:border-b-0 hover:bg-white"
+                    :class="Number(receiptForm.supplier) === Number(supplier.id) ? 'bg-blue-50 text-blue-800' : 'text-slate-700'"
+                    @click="selectReceiptSupplier(supplier)"
                   >
-                    {{ supplier.name }}{{ supplier.sector ? ` - ${supplier.sector}` : "" }}
-                  </option>
-                </select>
+                    <span class="block text-sm font-bold">{{ supplier.name }}</span>
+                    <span class="mt-1 block text-xs font-semibold text-slate-500">
+                      {{ supplier.sector || t("common.noInfo") }}
+                    </span>
+                  </button>
+
+                  <div
+                    v-if="filteredSuppliers.length === 0"
+                    class="px-3 py-4 text-sm font-semibold text-slate-500"
+                  >
+                    {{ t("pages.receiving.supplierSearchNoResult") }}
+                  </div>
+                </div>
+
                 <p
                   v-if="triedSubmit && !receiptForm.supplier"
                   class="inventory-error-text"
@@ -520,7 +629,7 @@ onMounted(() => {
                 <p v-else class="inventory-help-text">
                   {{ t("pages.receiving.supplierHelp") }}
                 </p>
-              </label>
+              </div>
 
               <div>
                 <span class="inventory-field-label">Belge / irsaliye no</span>
@@ -570,9 +679,9 @@ onMounted(() => {
                 :key="index"
                 class="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[minmax(0,1fr)_120px_140px_auto]"
               >
-                <label class="inventory-native-field">
+                <div class="min-w-0">
                   <span class="mb-1.5 flex items-center justify-between gap-3">
-                    <span class="inventory-native-label mb-0">{{ t("pages.receiving.product") }}</span>
+                    <span class="inventory-field-label mb-0">{{ t("pages.receiving.productSearch") }}</span>
                     <button
                       type="button"
                       class="inline-flex h-7 items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
@@ -582,36 +691,100 @@ onMounted(() => {
                       + {{ t("pages.receiving.addProduct") }}
                     </button>
                   </span>
-                  <select v-model="item.product" class="inventory-native-select">
-                    <option value="" disabled>{{ t("pages.receiving.selectProduct") }}</option>
-                    <option
-                      v-for="product in selectableProducts"
-                      :key="product.id"
-                      :value="product.id"
-                    >
-                      {{ product.name }} - {{ product.sku }} (stok: {{ product.stock }})
-                    </option>
-                  </select>
-                  <p
-                    v-if="selectableProducts.length === 0"
-                    class="inventory-help-text"
+
+                  <div
+                    v-if="getSelectedReceiptProduct(item)"
+                    class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-3"
                   >
-                    Bu tedarikçiden gelen ürünü listede bulamıyorsan hızlı ürün kartı oluştur.
-                  </p>
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div class="min-w-0">
+                        <p class="truncate text-sm font-bold text-blue-950">
+                          {{ getSelectedReceiptProduct(item).name }}
+                        </p>
+                        <div class="mt-2 flex flex-wrap gap-1.5">
+                          <span class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-blue-700">
+                            {{ t("pages.products.productCode") }}: {{ getSelectedReceiptProduct(item).sku || t("pages.products.noProductCode") }}
+                          </span>
+                          <span class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-blue-700">
+                            {{ t("common.stockLabel", { stock: getSelectedReceiptProduct(item).stock }) }}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        class="inline-flex shrink-0 items-center justify-center rounded-md border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
+                        @click="clearReceiptProduct(item)"
+                      >
+                        {{ t("common.change") }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <template v-else>
+                    <v-text-field
+                      v-model="item.product_search"
+                      class="inventory-field"
+                      :aria-label="t('pages.receiving.productSearch')"
+                      clearable
+                      :placeholder="t('pages.receiving.productSearchPlaceholder')"
+                      prepend-inner-icon="mdi-magnify"
+                      variant="outlined"
+                      density="comfortable"
+                      hide-details
+                      @click:clear="clearReceiptProduct(item)"
+                    />
+
+                    <div class="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                      <button
+                        v-for="product in getFilteredReceiptProducts(item)"
+                        :key="product.id"
+                        type="button"
+                        class="w-full border-b border-slate-200 px-3 py-3 text-left last:border-b-0 hover:bg-white"
+                        @click="selectReceiptProduct(item, product)"
+                      >
+                        <span class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <span class="min-w-0">
+                            <span class="block truncate text-sm font-bold text-slate-900">
+                              {{ product.name }}
+                            </span>
+                            <span class="mt-1 flex flex-wrap gap-1.5">
+                              <span class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">
+                                {{ t("pages.products.productCode") }}: {{ product.sku || t("pages.products.noProductCode") }}
+                              </span>
+                              <span class="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">
+                                {{ product.category_name || t("common.noCategory") }}
+                              </span>
+                            </span>
+                          </span>
+                          <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                            {{ t("common.stockLabel", { stock: product.stock }) }}
+                          </span>
+                        </span>
+                      </button>
+
+                      <div
+                        v-if="getFilteredReceiptProducts(item).length === 0"
+                        class="px-3 py-4 text-sm font-semibold text-slate-500"
+                      >
+                        {{ t("pages.receiving.productSearchNoResult") }}
+                      </div>
+                    </div>
+                  </template>
+
                   <p
                     v-if="triedSubmit && !item.product"
                     class="inventory-error-text"
                   >
                     {{ t("pages.receiving.productRequired") }}
                   </p>
-                </label>
+                </div>
 
                 <div>
-                  <span class="inventory-field-label">Miktar</span>
+                  <span class="inventory-field-label">{{ t("pages.receiving.quantity") }}</span>
                   <v-text-field
                     v-model.number="item.quantity"
                     class="inventory-field"
-                    aria-label="Miktar"
+                    :aria-label="t('pages.receiving.quantity')"
                     placeholder="10"
                     type="number"
                     min="1"
@@ -705,13 +878,13 @@ onMounted(() => {
               </div>
 
               <div>
-                <span class="inventory-field-label">SKU</span>
+                <span class="inventory-field-label">{{ t("pages.products.productCode") }}</span>
                 <v-text-field
                   v-model="quickProductForm.sku"
                   class="inventory-field"
-                  aria-label="SKU"
-                  placeholder="Örn: CIK-001"
-                  hint="Boşluk kullanma. Kaydedilirken büyük harfe çevrilir."
+                  :aria-label="t('pages.products.productCode')"
+                  :placeholder="t('pages.products.productCodePlaceholder')"
+                  :hint="t('pages.products.skuHint')"
                   persistent-hint
                   variant="outlined"
                   density="comfortable"
@@ -738,25 +911,6 @@ onMounted(() => {
                   {{ t("pages.products.categoryHelp") }}
                 </p>
               </label>
-
-              <div>
-                <span class="inventory-field-label">Satış / liste fiyatı</span>
-                <v-text-field
-                  v-model="quickProductForm.price"
-                  class="inventory-field"
-                  aria-label="Satış liste fiyatı"
-                  placeholder="Örn: 35.00"
-                  hint="Alış maliyeti değil; ürün kartında görünecek fiyat."
-                  persistent-hint
-                  prefix="₺"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  variant="outlined"
-                  density="comfortable"
-                  :rules="[rules.required, rules.positivePrice]"
-                />
-              </div>
 
               <div class="sm:col-span-2">
                 <span class="inventory-field-label">{{ t("pages.products.lowStockThreshold") }}</span>
