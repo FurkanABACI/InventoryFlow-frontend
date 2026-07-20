@@ -27,8 +27,10 @@ InventoryFlow frontend, şirket içi stok ve talep yönetimi için hazırlanmı�
 - Stok hareketlerini izleme
 - Düşük stok takibi
 - Kullanıcı yönetimi
+- Kullanıcıyı pasife alma ve tekrar aktifleştirme
 - TR/EN dil desteği
 - Aydınlık, karanlık ve sistem teması
+- Dashboard kartlarından ilgili sayfalara hızlı geçiş
 
 ## Kurulum
 
@@ -65,6 +67,8 @@ http://localhost:5173
 ```bash
 npm run build
 ```
+
+Build, teslim öncesi temel frontend kontrolüdür. Vue template, i18n anahtarları ve import hataları bu aşamada yakalanır.
 
 ## Docker ile Çalıştırma
 
@@ -103,6 +107,14 @@ docker build \
 5. Mal kabul ile stok girişi yapılır.
 6. Gerekirse talep kalemi ürün kartına bağlanır.
 7. Talep teslim edilir ve stok hareketi oluşur.
+
+## Yetki ve Görünüm
+
+- Admin kullanıcı, kullanıcı yönetimi dahil tüm operasyonel sayfaları görür.
+- İdari işler/operations kullanıcısı ürün, tedarikçi, mal kabul, talepler ve stok hareketlerini yönetir.
+- Birim kullanıcısı yalnızca talep akışına odaklanır.
+- Sağ üst profil menüsünden dil, tema ve çıkış işlemleri yapılır.
+- Dil seçenekleri Türkçe ve İngilizce, tema seçenekleri aydınlık, karanlık ve sistem temasıdır.
 
 ## Git Notu
 

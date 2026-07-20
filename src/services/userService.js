@@ -20,4 +20,9 @@ export const userService = {
     const response = await api.patch(`/auth/users/${userId}/`, { is_active: false })
     return response.data
   },
+
+  async activate(userId) {
+    const response = await api.patch(`/auth/users/${userId}/`, { is_active: true })
+    return response.data
+  },
 }

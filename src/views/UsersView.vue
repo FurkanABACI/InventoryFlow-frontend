@@ -21,6 +21,26 @@ const successSnackbar = ref(false);
 const editingUserId = ref(null);
 const userToDelete = ref(null);
 
+const selectedUserIsActive = computed(() => userToDelete.value?.is_active !== false);
+
+const userStatusAction = computed(() =>
+  selectedUserIsActive.value
+    ? {
+        title: t("pages.users.deactivateUserTitle"),
+        button: t("pages.users.deactivateUser"),
+        icon: "mdi-account-off-outline",
+        color: "error",
+        success: t("pages.users.deactivateSuccess"),
+      }
+    : {
+        title: t("pages.users.activateUserTitle"),
+        button: t("pages.users.activateUser"),
+        icon: "mdi-account-check-outline",
+        color: "primary",
+        success: t("pages.users.activateSuccess"),
+      },
+);
+
 const userForm = reactive({
   username: "",
   first_name: "",
@@ -260,7 +280,7 @@ async function submitUser() {
   }
 }
 
-async function deactivateUser() {
+async function toggleUserActiveStatus() {
   if (!userToDelete.value) {
     return;
   }
@@ -268,9 +288,14 @@ async function deactivateUser() {
   deletingUser.value = true;
 
   try {
-    await userService.deactivate(userToDelete.value.id);
+    if (selectedUserIsActive.value) {
+      await userService.deactivate(userToDelete.value.id);
+    } else {
+      await userService.activate(userToDelete.value.id);
+    }
+
     await fetchUsers();
-    successMessage.value = "Kullanıcı pasif duruma alındı.";
+    successMessage.value = userStatusAction.value.success;
     successSnackbar.value = true;
     closeDeleteUserDialog();
   } catch (error) {
@@ -372,11 +397,12 @@ onMounted(() => {
               @click="openEditUserDialog(item)"
             />
             <v-btn
-              :aria-label="t('pages.users.deactivateUser')"
-              class="inventory-row-action inventory-row-action--danger"
-              icon="mdi-account-off-outline"
+              :aria-label="getTableItem(item).is_active ? t('pages.users.deactivateUser') : t('pages.users.activateUser')"
+              class="inventory-row-action"
+              :class="{ 'inventory-row-action--danger': getTableItem(item).is_active }"
+              :icon="getTableItem(item).is_active ? 'mdi-account-off-outline' : 'mdi-account-check-outline'"
               size="small"
-              :title="t('pages.users.deactivateUser')"
+              :title="getTableItem(item).is_active ? t('pages.users.deactivateUser') : t('pages.users.activateUser')"
               variant="text"
               @click="openDeleteUserDialog(item)"
             />
@@ -535,20 +561,28 @@ onMounted(() => {
     <v-dialog v-model="deleteUserDialog" max-width="520">
       <v-card class="inventory-card overflow-hidden" elevation="0">
         <v-card-title class="px-6 pt-6 text-lg font-bold text-slate-950">
-          {{ t("pages.users.deactivateUserTitle") }}
+          {{ userStatusAction.title }}
         </v-card-title>
 
         <v-card-text class="px-6 pt-4 text-slate-600">
-          <strong>{{ userToDelete?.full_name }}</strong> kullanıcısını pasif duruma almak istiyor musun?
-          Bu kişi artık sisteme giriş yapamaz.
+          <span v-if="selectedUserIsActive">
+            {{ t("pages.users.deactivateConfirmPrefix") }}
+            <strong>{{ userToDelete?.full_name }}</strong>
+            {{ t("pages.users.deactivateConfirmSuffix") }}
+          </span>
+          <span v-else>
+            {{ t("pages.users.activateConfirmPrefix") }}
+            <strong>{{ userToDelete?.full_name }}</strong>
+            {{ t("pages.users.activateConfirmSuffix") }}
+          </span>
         </v-card-text>
 
         <v-card-actions class="gap-2 px-6 pb-6 pt-1">
           <v-btn variant="text" @click="closeDeleteUserDialog">
             {{ t("common.cancel") }}
           </v-btn>
-          <v-btn color="error" :loading="deletingUser" variant="flat" @click="deactivateUser">
-            {{ t("pages.users.deactivateUser") }}
+          <v-btn :color="userStatusAction.color" :loading="deletingUser" variant="flat" @click="toggleUserActiveStatus">
+            {{ userStatusAction.button }}
           </v-btn>
         </v-card-actions>
       </v-card>
