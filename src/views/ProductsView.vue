@@ -27,6 +27,7 @@ const triedSubmit = ref(false);
 const creatingCategory = ref(false);
 const creatingSupplier = ref(false);
 const deletingProduct = ref(false);
+const generatingProductCode = ref(false);
 const categories = ref([]);
 const suppliers = ref([]);
 const editingProductId = ref(null);
@@ -58,7 +59,12 @@ const productHeaders = computed(() => [
   { title: t("pages.products.category"), key: "categoryName" },
   { title: t("pages.products.supplier"), key: "supplierName" },
   { title: t("pages.products.stock"), key: "stock" },
-  { title: t("pages.products.actions"), key: "actions", sortable: false, align: "end" },
+  {
+    title: t("pages.products.actions"),
+    key: "actions",
+    sortable: false,
+    align: "end",
+  },
 ]);
 
 const itemsPerPageOptions = computed(() => [
@@ -73,7 +79,8 @@ function getCreatedTime(item) {
 }
 
 const rules = {
-  required: (value) => Boolean(String(value ?? "").trim()) || t("validation.required"),
+  required: (value) =>
+    Boolean(String(value ?? "").trim()) || t("validation.required"),
   sku: (value) =>
     !String(value ?? "").includes(" ") || t("validation.skuNoSpace"),
   nonNegativeNumber: (value) =>
@@ -81,7 +88,9 @@ const rules = {
   wholeNumber: (value) =>
     Number.isInteger(Number(value)) || t("validation.wholeNumber"),
   email: (value) =>
-    !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value)) || t("validation.email"),
+    !value ||
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value)) ||
+    t("validation.email"),
 };
 
 function getStockStatus(product) {
@@ -150,8 +159,16 @@ const tableProducts = computed(() => {
 
       return {
         ...product,
-        categoryName: product.category_name || product.category?.name || product.category || "-",
-        supplierName: product.supplier_name || product.supplier?.name || product.supplier || "-",
+        categoryName:
+          product.category_name ||
+          product.category?.name ||
+          product.category ||
+          "-",
+        supplierName:
+          product.supplier_name ||
+          product.supplier?.name ||
+          product.supplier ||
+          "-",
         stockStatusColor: stockStatus.color,
         stockStatusText: stockStatus.text,
       };
@@ -176,7 +193,10 @@ const productPageCount = computed(() => {
     return 1;
   }
 
-  return Math.max(1, Math.ceil(tableProducts.value.length / itemsPerPage.value));
+  return Math.max(
+    1,
+    Math.ceil(tableProducts.value.length / itemsPerPage.value),
+  );
 });
 
 const productPaginationText = computed(() => {
@@ -399,6 +419,20 @@ async function submitQuickSupplier() {
   }
 }
 
+async function generateProductCode() {
+  generatingProductCode.value = true;
+  formError.value = "";
+
+  try {
+    const data = await productsStore.generateProductCode();
+    productForm.sku = data.code;
+  } catch {
+    formError.value = t("pages.products.generateCodeError");
+  } finally {
+    generatingProductCode.value = false;
+  }
+}
+
 async function submitProduct() {
   formError.value = "";
   triedSubmit.value = true;
@@ -467,17 +501,16 @@ onMounted(() => {
       {{ error }}
     </v-alert>
 
-    <v-card
-      class="inventory-card overflow-hidden"
-      elevation="0"
-    >
+    <v-card class="inventory-card overflow-hidden" elevation="0">
       <div
         class="inventory-section-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
       >
         <div>
-          <h2 class="font-bold text-slate-950">{{ t('pages.products.title') }}</h2>
+          <h2 class="font-bold text-slate-950">
+            {{ t("pages.products.title") }}
+          </h2>
           <p class="text-sm text-slate-500">
-            {{ t('pages.products.listed', { count: tableProducts.length }) }}
+            {{ t("pages.products.listed", { count: tableProducts.length }) }}
           </p>
         </div>
 
@@ -488,7 +521,7 @@ onMounted(() => {
           variant="flat"
           @click="openProductDialog"
         >
-          {{ t('pages.products.newProduct') }}
+          {{ t("pages.products.newProduct") }}
         </v-btn>
       </div>
 
@@ -498,7 +531,9 @@ onMounted(() => {
         class="grid gap-4 px-6 py-5 lg:grid-cols-[minmax(0,1fr)_210px] lg:items-start"
       >
         <div>
-          <span class="inventory-field-label">{{ t('pages.products.searchLabel') }}</span>
+          <span class="inventory-field-label">{{
+            t("pages.products.searchLabel")
+          }}</span>
           <v-text-field
             v-model="search"
             class="inventory-field"
@@ -516,10 +551,7 @@ onMounted(() => {
           <span class="inventory-native-label">
             {{ t("common.recordsToShow") }}
           </span>
-          <select
-            v-model.number="itemsPerPage"
-            class="inventory-native-select"
-          >
+          <select v-model.number="itemsPerPage" class="inventory-native-select">
             <option
               v-for="option in itemsPerPageOptions"
               :key="option.value"
@@ -550,7 +582,8 @@ onMounted(() => {
             class="inline-flex min-w-[132px] items-center justify-center whitespace-nowrap rounded-full border px-4 py-1.5 text-xs font-bold"
             :class="getStockBadgeClass(item)"
           >
-            {{ getStockChipValue(item, value) }} {{ t("pages.products.stockSuffix") }} · {{ getStockChipText(item) }}
+            {{ getStockChipValue(item, value) }}
+            {{ t("pages.products.stockSuffix") }} · {{ getStockChipText(item) }}
           </span>
         </template>
 
@@ -583,7 +616,8 @@ onMounted(() => {
               <div class="inventory-empty-state__icon">Ü</div>
               <p class="inventory-empty-state__title">Henüz ürün kaydı yok</p>
               <p class="inventory-empty-state__text">
-                İlk ürünü ekleyerek stok, kategori ve tedarikçi takibini başlatabilirsin.
+                İlk ürünü ekleyerek stok, kategori ve tedarikçi takibini
+                başlatabilirsin.
               </p>
               <v-btn
                 class="mt-4"
@@ -623,7 +657,11 @@ onMounted(() => {
     <v-dialog v-model="productDialog" max-width="760">
       <v-card class="inventory-card overflow-hidden" elevation="0">
         <v-card-title class="px-6 pt-6 text-lg font-bold text-slate-950">
-          {{ editingProductId ? t("pages.products.editProductTitle") : t("pages.products.createProductTitle") }}
+          {{
+            editingProductId
+              ? t("pages.products.editProductTitle")
+              : t("pages.products.createProductTitle")
+          }}
         </v-card-title>
 
         <v-card-subtitle class="px-6 text-slate-500">
@@ -638,7 +676,9 @@ onMounted(() => {
           <v-form ref="productFormRef" @submit.prevent="submitProduct">
             <div class="grid gap-x-5 gap-y-5 sm:grid-cols-2">
               <div>
-                <span class="inventory-field-label">{{ t("pages.products.productName") }}</span>
+                <span class="inventory-field-label">{{
+                  t("pages.products.productName")
+                }}</span>
                 <v-text-field
                   v-model="productForm.name"
                   class="inventory-field"
@@ -653,7 +693,22 @@ onMounted(() => {
               </div>
 
               <div>
-                <span class="inventory-field-label">{{ t("pages.products.productCode") }}</span>
+                <div class="mb-1.5 flex items-center justify-between gap-3">
+                  <span class="inventory-field-label mb-0">{{
+                    t("pages.products.productCode")
+                  }}</span>
+                  <v-btn
+                    color="primary"
+                    density="comfortable"
+                    prepend-icon="mdi-auto-fix"
+                    size="small"
+                    variant="tonal"
+                    :loading="generatingProductCode"
+                    @click="generateProductCode"
+                  >
+                    {{ t("pages.products.generateCode") }}
+                  </v-btn>
+                </div>
                 <v-text-field
                   v-model="productForm.sku"
                   class="inventory-field"
@@ -685,7 +740,9 @@ onMounted(() => {
                   v-model="productForm.category"
                   class="inventory-native-select"
                 >
-                  <option value="" disabled>{{ t("pages.products.selectCategory") }}</option>
+                  <option value="" disabled>
+                    {{ t("pages.products.selectCategory") }}
+                  </option>
                   <option
                     v-for="category in activeCategories"
                     :key="category.id"
@@ -723,7 +780,9 @@ onMounted(() => {
                   v-model="productForm.supplier"
                   class="inventory-native-select"
                 >
-                  <option value="" disabled>{{ t("pages.products.selectSupplier") }}</option>
+                  <option value="" disabled>
+                    {{ t("pages.products.selectSupplier") }}
+                  </option>
                   <option
                     v-for="supplier in activeSuppliers"
                     :key="supplier.id"
@@ -744,7 +803,9 @@ onMounted(() => {
               </label>
 
               <div>
-                <span class="inventory-field-label">{{ t("pages.products.lowStockThreshold") }}</span>
+                <span class="inventory-field-label">{{
+                  t("pages.products.lowStockThreshold")
+                }}</span>
                 <v-text-field
                   v-model.number="productForm.low_stock_threshold"
                   class="inventory-field"
@@ -757,7 +818,11 @@ onMounted(() => {
                   step="1"
                   variant="outlined"
                   density="comfortable"
-                  :rules="[rules.required, rules.nonNegativeNumber, rules.wholeNumber]"
+                  :rules="[
+                    rules.required,
+                    rules.nonNegativeNumber,
+                    rules.wholeNumber,
+                  ]"
                 />
               </div>
             </div>
@@ -774,7 +839,11 @@ onMounted(() => {
             variant="flat"
             @click="submitProduct"
           >
-            {{ editingProductId ? t("pages.products.saveChanges") : t("pages.products.saveProduct") }}
+            {{
+              editingProductId
+                ? t("pages.products.saveChanges")
+                : t("pages.products.saveProduct")
+            }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -787,8 +856,8 @@ onMounted(() => {
         </v-card-title>
 
         <v-card-text class="px-6 pt-4 text-slate-600">
-          <strong>{{ productToDelete?.name }}</strong> ürününü aktif listeden kaldırmak istiyor musun?
-          Eski mal kabul kayıtları korunur.
+          <strong>{{ productToDelete?.name }}</strong> ürününü aktif listeden
+          kaldırmak istiyor musun? Eski mal kabul kayıtları korunur.
         </v-card-text>
 
         <v-card-actions class="gap-2 px-6 pb-6 pt-1">
@@ -827,10 +896,15 @@ onMounted(() => {
             {{ quickCategoryError }}
           </v-alert>
 
-          <v-form ref="quickCategoryFormRef" @submit.prevent="submitQuickCategory">
+          <v-form
+            ref="quickCategoryFormRef"
+            @submit.prevent="submitQuickCategory"
+          >
             <div class="grid gap-y-5">
               <div>
-                <span class="inventory-field-label">{{ t("pages.products.categoryName") }}</span>
+                <span class="inventory-field-label">{{
+                  t("pages.products.categoryName")
+                }}</span>
                 <v-text-field
                   v-model="quickCategoryForm.name"
                   class="inventory-field"
@@ -845,7 +919,9 @@ onMounted(() => {
               </div>
 
               <label class="inventory-native-field">
-                <span class="inventory-native-label">{{ t("common.description") }}</span>
+                <span class="inventory-native-label">{{
+                  t("common.description")
+                }}</span>
                 <textarea
                   v-model="quickCategoryForm.description"
                   class="inventory-native-textarea"
@@ -892,10 +968,15 @@ onMounted(() => {
             {{ quickSupplierError }}
           </v-alert>
 
-          <v-form ref="quickSupplierFormRef" @submit.prevent="submitQuickSupplier">
+          <v-form
+            ref="quickSupplierFormRef"
+            @submit.prevent="submitQuickSupplier"
+          >
             <div class="grid gap-x-5 gap-y-5 sm:grid-cols-2">
               <div class="sm:col-span-2">
-                <span class="inventory-field-label">{{ t("pages.products.companyName") }}</span>
+                <span class="inventory-field-label">{{
+                  t("pages.products.companyName")
+                }}</span>
                 <v-text-field
                   v-model="quickSupplierForm.name"
                   class="inventory-field"
@@ -910,7 +991,9 @@ onMounted(() => {
               </div>
 
               <div>
-                <span class="inventory-field-label">{{ t("pages.products.serviceArea") }}</span>
+                <span class="inventory-field-label">{{
+                  t("pages.products.serviceArea")
+                }}</span>
                 <v-text-field
                   v-model="quickSupplierForm.sector"
                   class="inventory-field"
@@ -922,7 +1005,9 @@ onMounted(() => {
               </div>
 
               <div>
-                <span class="inventory-field-label">{{ t("common.phone") }}</span>
+                <span class="inventory-field-label">{{
+                  t("common.phone")
+                }}</span>
                 <v-text-field
                   v-model="quickSupplierForm.phone"
                   class="inventory-field"
@@ -934,7 +1019,9 @@ onMounted(() => {
               </div>
 
               <div class="sm:col-span-2">
-                <span class="inventory-field-label">{{ t("common.email") }}</span>
+                <span class="inventory-field-label">{{
+                  t("common.email")
+                }}</span>
                 <v-text-field
                   v-model="quickSupplierForm.email"
                   class="inventory-field"

@@ -34,6 +34,11 @@ export const productService = {
     return response.data
   },
 
+  async generateCode() {
+    const response = await api.get('/products/generate-code/')
+    return response.data
+  },
+
   async create(payload) {
     const response = await api.post('/products/', payload)
     return response.data

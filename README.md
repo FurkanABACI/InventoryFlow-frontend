@@ -19,6 +19,7 @@ InventoryFlow frontend, şirket içi stok ve talep yönetimi için hazırlanmı�
 - Role göre menü ve route kontrolü
 - Admin, idari işler ve birim kullanıcısı ayrımı
 - Ürün yönetimi
+- Ürün kartı oluştururken otomatik ürün kodu üretme
 - Tedarikçi yönetimi
 - Mal kabul ekranı
 - Talep oluşturma ve talep detay akışı
@@ -97,6 +98,10 @@ docker build \
   --build-arg VITE_API_BASE_URL=http://localhost:8000/api \
   -t inventoryflow-frontend .
 ```
+
+## Ürün Kodu Akışı
+
+Ürün kartı oluştururken kullanıcı ürün kodunu bilmiyorsa **Kod oluştur** butonuna basar. Frontend `/products/generate-code/` endpointinden gelen `PRD-0001` formatındaki kodu ürün kodu alanına otomatik yazar. Böylece admin/idari işler manuel kod düşünmeden standart ürün kartı oluşturabilir.
 
 ## Proje Akışı
 

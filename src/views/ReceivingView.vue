@@ -13,6 +13,7 @@ const categories = ref([]);
 const loading = ref(false);
 const creating = ref(false);
 const creatingProduct = ref(false);
+const generatingQuickProductCode = ref(false);
 const receiptDialog = ref(false);
 const quickProductDialog = ref(false);
 const receiptFormRef = ref(null);
@@ -341,6 +342,20 @@ async function fetchPageData() {
     error.value = t("pages.receiving.loading");
   } finally {
     loading.value = false;
+  }
+}
+
+async function generateQuickProductCode() {
+  generatingQuickProductCode.value = true;
+  quickProductError.value = "";
+
+  try {
+    const data = await productService.generateCode();
+    quickProductForm.sku = data.code;
+  } catch {
+    quickProductError.value = t("pages.products.generateCodeError");
+  } finally {
+    generatingQuickProductCode.value = false;
   }
 }
 
@@ -878,7 +893,20 @@ onMounted(() => {
               </div>
 
               <div>
-                <span class="inventory-field-label">{{ t("pages.products.productCode") }}</span>
+                <div class="mb-1.5 flex items-center justify-between gap-3">
+                  <span class="inventory-field-label mb-0">{{ t("pages.products.productCode") }}</span>
+                  <v-btn
+                    color="primary"
+                    density="comfortable"
+                    prepend-icon="mdi-auto-fix"
+                    size="small"
+                    variant="tonal"
+                    :loading="generatingQuickProductCode"
+                    @click="generateQuickProductCode"
+                  >
+                    {{ t("pages.products.generateCode") }}
+                  </v-btn>
+                </div>
                 <v-text-field
                   v-model="quickProductForm.sku"
                   class="inventory-field"

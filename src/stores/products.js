@@ -48,6 +48,10 @@ export const useProductsStore = defineStore('products', {
       }
     },
 
+    async generateProductCode() {
+      return productService.generateCode()
+    },
+
     async createProduct(payload) {
       this.creating = true
       this.error = null
